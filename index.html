@@ -193,14 +193,14 @@ erDiagram
       </div>
 
       <h3 class="sub">About the SQL engine</h3>
-      <p>This page runs <strong>SQLite</strong> in your browser through <a href="https://sql.js.org/" target="_blank" rel="noopener">sql.js</a>, because GitHub Pages cannot host a database server. All practice SQL is written so it also runs on <strong>MySQL 8.0+</strong>. A few behaviours differ:</p>
+      <p>This page runs <strong>SQLite</strong> in your browser through <a href="https://sql.js.org/" target="_blank" rel="noopener">sql.js</a>, because GitHub Pages cannot host a database server. All practice SQL is written so it also runs on <strong>MySQL 8.0+</strong>, and every query and comparison on this page was checked on MySQL 8.4 with identical results. A few behaviours differ:</p>
       <div class="table-scroll">
         <table class="doc-table">
           <thead><tr><th>Behaviour</th><th>SQLite (this page)</th><th>MySQL 8</th></tr></thead>
           <tbody>
-            <tr><td>Column in SELECT but not in GROUP BY</td><td>Allowed; picks a value from some row</td><td>Error when <code>ONLY_FULL_GROUP_BY</code> is on (the default)</td></tr>
+            <tr><td>Column in SELECT that is not in GROUP BY and not determined by it, e.g. <code>SELECT area_id, club_name, COUNT(*) FROM clubs GROUP BY area_id</code></td><td>Allowed; picks a <code>club_name</code> from some row of each group</td><td>Error 1055 when <code>ONLY_FULL_GROUP_BY</code> is on (the default). Allowed if the column is functionally dependent on the GROUP BY columns, e.g. <code>city</code> when grouping by the unique <code>club_name</code></td></tr>
             <tr><td><code>5 / 2</code></td><td><code>2</code> (integer division)</td><td><code>2.5000</code></td></tr>
-            <tr><td><code>'amy' = 'Amy'</code></td><td>false</td><td>true with the default collation</td></tr>
+            <tr><td><code>'amy' = 'Amy'</code></td><td><code>0</code> (false)</td><td><code>1</code> (true) with the default collation</td></tr>
             <tr><td>Wrong data type in a column</td><td>Usually accepted</td><td>Error in strict mode</td></tr>
             <tr><td>Error text for COUNT() in WHERE</td><td><code>misuse of aggregate: COUNT()</code></td><td><code>Invalid use of group function</code></td></tr>
           </tbody>

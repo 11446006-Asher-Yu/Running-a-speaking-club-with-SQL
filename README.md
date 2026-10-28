@@ -45,6 +45,16 @@ python -m http.server 8000
 
 Then open http://localhost:8000/.
 
+## Check on MySQL
+
+`tools/verify_mysql.py` loads the data into a fresh MySQL database and compares every query with the expected results.
+Last run: MySQL 8.4.9 with the default `sql_mode` (including `ONLY_FULL_GROUP_BY`), 24/24 match.
+
+```bash
+pip install pymysql
+python tools/verify_mysql.py --port 3306 --user root --password <your password>
+```
+
 ## Rebuild the data
 
 ```bash
