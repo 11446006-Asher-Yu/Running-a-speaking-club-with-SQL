@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Club Operations SQL Lab</title>
+  <meta name="description" content="An interactive SQL practice site built on a fictional Toastmasters club operations database.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="#top">Club Operations SQL Lab</a>
+      <nav class="nav" aria-label="Sections">
+        <a href="#case">Case</a>
+        <a href="#design">Design</a>
+        <a href="#queries">Queries</a>
+        <a href="#compare">Compare</a>
+        <a href="#playground">Playground</a>
+      </nav>
+      <button id="reset-db" class="btn btn-ghost" type="button" disabled>Reset database</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap">
+      <p class="eyebrow">Database Management · Course Project</p>
+      <h1>Running a speaking club with SQL</h1>
+      <p class="lead">A practice database for the officers of Toastmasters clubs in one area. Read the case, explore the design, then edit and run real SQL in your browser.</p>
+      <p id="engine-status" class="status status-loading" role="status">Loading the SQL engine…</p>
+      <p class="notice"><strong>Data notice:</strong> every person, club, meeting and speech in this database is fictional. No real member data is used.</p>
+    </section>
+
+    <!-- 1. Case -->
+    <section id="case" class="section wrap">
+      <h2><span class="num">1</span>Case background</h2>
+      <div class="grid-3">
+        <article class="card">
+          <h3>VP Education</h3>
+          <p>Plans each meeting. Needs to know who takes which role, who has not been on stage for a while, and how far each member is on their Pathways path.</p>
+        </article>
+        <article class="card">
+          <h3>VP Membership</h3>
+          <p>Keeps the club healthy. Needs to know how many members are active and whose dues are overdue.</p>
+        </article>
+        <article class="card">
+          <h3>Area Director</h3>
+          <p>Supports several clubs. Needs to spot clubs with too few members and compare activity across the area.</p>
+        </article>
+      </div>
+      <h3 class="sub">The problem</h3>
+      <ul class="list">
+        <li><strong>Scattered records.</strong> Role sheets, speech logs and member lists live in separate spreadsheets, so they are hard to cross-check.</li>
+        <li><strong>Inconsistent data.</strong> The same person is written in different ways in different files.</li>
+        <li><strong>Slow answers.</strong> Questions like “who has never taken a role?” take a lot of manual counting.</li>
+      </ul>
+      <h3 class="sub">The solution</h3>
+      <p>Put members, clubs, meetings, roles and speeches into one normalized relational database, so each of these questions becomes a single SQL query.</p>
+    </section>
+
+    <!-- 2. Design -->
+    <section id="design" class="section wrap">
+      <h2><span class="num">2</span>Database design</h2>
+
+      <h3 class="sub">Entity-relationship diagram</h3>
+      <div class="erd card">
+        <pre class="mermaid">
+erDiagram
+    areas ||--o{ clubs : "contains"
+    clubs ||--o{ memberships : "has"
+    members ||--o{ memberships : "joins"
+    clubs ||--o{ meetings : "holds"
+    meetings ||--o{ role_assignments : "schedules"
+    members ||--o{ role_assignments : "takes"
+    roles ||--o{ role_assignments : "type of"
+    meetings ||--o{ speeches : "includes"
+    members ||--o{ speeches : "delivers"
+    members |o--o{ speeches : "evaluates"
+    pathways |o--o{ speeches : "belongs to"
+    areas {
+        VARCHAR area_id PK
+        VARCHAR area_name
+        VARCHAR division
+    }
+    clubs {
+        INTEGER club_id PK
+        VARCHAR club_name UK
+        VARCHAR area_id FK
+        VARCHAR city
+        VARCHAR meeting_weekday
+        DATE charter_date
+    }
+    members {
+        INTEGER member_id PK
+        VARCHAR display_name
+        DATE first_join_date
+    }
+    memberships {
+        INTEGER membership_id PK
+        INTEGER member_id FK
+        INTEGER club_id FK
+        DATE start_date
+        DATE paid_through
+        VARCHAR status
+    }
+    meetings {
+        INTEGER meeting_id PK
+        INTEGER club_id FK
+        DATE meeting_date
+        VARCHAR theme
+    }
+    roles {
+        VARCHAR role_code PK
+        VARCHAR role_name
+        VARCHAR category
+    }
+    role_assignments {
+        INTEGER meeting_id PK,FK
+        VARCHAR role_code PK,FK
+        INTEGER member_id FK
+    }
+    pathways {
+        VARCHAR path_code PK
+        VARCHAR path_name
+    }
+    speeches {
+        INTEGER speech_id PK
+        INTEGER meeting_id FK
+        INTEGER member_id FK
+        INTEGER evaluator_id FK
+        VARCHAR path_code FK
+        INTEGER path_level
+        VARCHAR title
+        INTEGER duration_sec
+        INTEGER min_sec
+        INTEGER max_sec
+    }
+        </pre>
+      </div>
+
+      <h3 class="sub">Key design decisions</h3>
+      <div class="table-scroll">
+        <table class="doc-table">
+          <thead><tr><th>Decision</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td><code>memberships</code> is its own table</td><td>A member can belong to more than one club, so members and clubs are many-to-many. The dues date <code>paid_through</code> belongs to one membership, not to the person.</td></tr>
+            <tr><td><code>role_assignments</code> key is (<code>meeting_id</code>, <code>role_code</code>)</td><td>Each role in a meeting can be taken by only one person. The composite primary key lets the database block double bookings.</td></tr>
+            <tr><td>Speech evaluators are stored in <code>speeches.evaluator_id</code></td><td>A meeting has several evaluators. As a role, the composite key would reject the second one. Each evaluator is tied to exactly one speech, so the column belongs on the speech.</td></tr>
+            <tr><td><code>status</code> and <code>paid_through</code> are separate</td><td><code>status</code> says whether the person is still in the club; <code>paid_through</code> says how far dues are paid. “Still in the club but not renewed” is the combination of both.</td></tr>
+            <tr><td>Time limits stored on each speech</td><td>Different projects have different limits, so <code>min_sec</code>/<code>max_sec</code> are needed to judge each speech.</td></tr>
+            <tr><td>No phone, email or address columns</td><td>None of the questions need them. Collecting only what is needed protects privacy.</td></tr>
+            <tr><td>Third normal form (3NF)</td><td>Every non-key column depends only on its table’s key. For example, a club’s area is stored only in <code>clubs</code>, never repeated in <code>meetings</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">Tables, columns and sample data</h3>
+      <p class="hint">Click a table to see its columns and the first rows of sample data.</p>
+      <div id="table-tabs" class="tabs" role="tablist"></div>
+      <div id="table-detail"></div>
+    </section>
+
+    <!-- 3. Queries -->
+    <section id="queries" class="section wrap">
+      <h2><span class="num">3</span>Query practice</h2>
+      <p>Each card has a question, a working SQL answer and the expected result. Change the SQL and press <kbd>Run</kbd> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>) to see the actual result or the error message.</p>
+      <p class="hint">“Active member” means <code>status = 'active'</code> and <code>paid_through &gt;= '2026-10-31'</code>. The date is fixed so the expected results never change.</p>
+      <div id="level-filter" class="filter" role="group" aria-label="Filter by level">
+        <button class="chip is-on" data-level="All" type="button">All</button>
+        <button class="chip" data-level="Basic" type="button">Basic</button>
+        <button class="chip" data-level="Intermediate" type="button">Intermediate</button>
+        <button class="chip" data-level="Advanced" type="button">Advanced</button>
+      </div>
+      <div id="query-list" class="stack"></div>
+    </section>
+
+    <!-- 4. Compare -->
+    <section id="compare" class="section wrap">
+      <h2><span class="num">4</span>Result comparison</h2>
+      <p>Same question, two versions of SQL. See how a small change alters the result, and why.</p>
+      <div id="compare-list" class="stack"></div>
+    </section>
+
+    <!-- Playground -->
+    <section id="playground" class="section wrap">
+      <h2><span class="num">+</span>Playground</h2>
+      <p>Write any SQL you like. Click a table name to insert a starter query. If you change or delete data, use <em>Reset database</em> at the top.</p>
+      <div id="table-chips" class="filter"></div>
+      <div class="card">
+        <textarea id="play-sql" class="editor" spellcheck="false" wrap="off" aria-label="Playground SQL">SELECT * FROM clubs;</textarea>
+        <div class="actions"><button id="play-run" class="btn" type="button" disabled>Run</button></div>
+        <div id="play-result" class="result"></div>
+      </div>
+
+      <h3 class="sub">About the SQL engine</h3>
+      <p>This page runs <strong>SQLite</strong> in your browser through <a href="https://sql.js.org/" target="_blank" rel="noopener">sql.js</a>, because GitHub Pages cannot host a database server. All practice SQL is written so it also runs on <strong>MySQL 8.0+</strong>. A few behaviours differ:</p>
+      <div class="table-scroll">
+        <table class="doc-table">
+          <thead><tr><th>Behaviour</th><th>SQLite (this page)</th><th>MySQL 8</th></tr></thead>
+          <tbody>
+            <tr><td>Column in SELECT but not in GROUP BY</td><td>Allowed; picks a value from some row</td><td>Error when <code>ONLY_FULL_GROUP_BY</code> is on (the default)</td></tr>
+            <tr><td><code>5 / 2</code></td><td><code>2</code> (integer division)</td><td><code>2.5000</code></td></tr>
+            <tr><td><code>'amy' = 'Amy'</code></td><td>false</td><td>true with the default collation</td></tr>
+            <tr><td>Wrong data type in a column</td><td>Usually accepted</td><td>Error in strict mode</td></tr>
+            <tr><td>Error text for COUNT() in WHERE</td><td><code>misuse of aggregate: COUNT()</code></td><td><code>Invalid use of group function</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p><strong>Author:</strong> 余欣嬨 (11446006) · Database Management, National Taipei University of Business · 2026</p>
+      <p><strong>AI use:</strong> AI tools helped generate the fictional sample data, the page code and some wording. The table design, the questions and the checking of every result were done and reviewed by the author.</p>
+      <p><a href="https://github.com/11446006-Asher-Yu/Running-a-speaking-club-with-SQL" target="_blank" rel="noopener">Source on GitHub</a></p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <script src="js/design.js"></script>
+  <script src="js/queries.js"></script>
+  <script src="js/compare.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
