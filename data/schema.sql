@@ -101,7 +101,8 @@ CREATE TABLE pathways (
 -- path_code and path_level are NULL together, for non-Pathways speeches (e.g. contest practice).
 -- duration_sec is NULL when the timer did not record it.
 -- member_id (speaker) and evaluator_id are NULL while the speech is planned but
--- nobody has been found for it yet.
+-- nobody has been found for it yet. status separates planned speeches from ones
+-- that were delivered (or cancelled); a delivered speech must have both people.
 CREATE TABLE speeches (
     speech_id       INTEGER      PRIMARY KEY,
     meeting_id      INTEGER      NOT NULL,
@@ -113,6 +114,9 @@ CREATE TABLE speeches (
     duration_sec    INTEGER,
     min_sec         INTEGER      NOT NULL,
     max_sec         INTEGER      NOT NULL,
+    status          VARCHAR(10)  NOT NULL DEFAULT 'planned',
+    CHECK (status IN ('planned', 'delivered', 'cancelled')),
+    CHECK (status <> 'delivered' OR (member_id IS NOT NULL AND evaluator_id IS NOT NULL)),
     CHECK (path_level BETWEEN 1 AND 5),
     CHECK ((path_code IS NULL AND path_level IS NULL)
         OR (path_code IS NOT NULL AND path_level IS NOT NULL)),

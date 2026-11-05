@@ -103,6 +103,7 @@ ORDER BY m.display_name;""",
        ROUND(AVG(sp.duration_sec), 1) AS avg_sec
 FROM speeches sp
 JOIN members m ON m.member_id = sp.member_id
+WHERE sp.status = 'delivered'
 GROUP BY m.member_id, m.display_name
 ORDER BY speeches DESC, m.display_name;""",
     },
@@ -112,10 +113,12 @@ ORDER BY speeches DESC, m.display_name;""",
         "sql": """SELECT m.display_name, COUNT(*) AS speeches
 FROM speeches sp
 JOIN members m ON m.member_id = sp.member_id
+WHERE sp.status = 'delivered'
 GROUP BY m.member_id, m.display_name
 HAVING COUNT(*) > (
     SELECT COUNT(member_id) * 1.0 / COUNT(DISTINCT member_id)
     FROM speeches
+    WHERE status = 'delivered'
 )
 ORDER BY speeches DESC, m.display_name;""",
     },
@@ -134,16 +137,18 @@ FROM speeches sp
 JOIN meetings mt ON mt.meeting_id = sp.meeting_id
 JOIN members m   ON m.member_id = sp.member_id
 WHERE mt.meeting_date BETWEEN '2026-10-01' AND '2026-10-31'
+  AND sp.status = 'delivered'
 ORDER BY mt.meeting_date, sp.speech_id;""",
     },
     {
-        "id": "Q11", "level": "Advanced", "concept": "COUNT(DISTINCT), LEFT JOIN", "user": "VP Education",
+        "id": "Q11", "level": "Advanced", "concept": "COUNT(DISTINCT), condition inside LEFT JOIN ... ON", "user": "VP Education",
         "question": "For each Pathways path, how many different members have given a speech on it, and how many speeches?",
         "sql": """SELECT p.path_name,
        COUNT(DISTINCT sp.member_id) AS members_on_path,
        COUNT(sp.speech_id) AS speeches
 FROM pathways p
 LEFT JOIN speeches sp ON sp.path_code = p.path_code
+                     AND sp.status = 'delivered'
 GROUP BY p.path_code, p.path_name
 ORDER BY members_on_path DESC, p.path_name;""",
     },
@@ -174,6 +179,7 @@ ORDER BY a.area_id;""",
     SELECT mt.club_id, sp.member_id, COUNT(*) AS speeches
     FROM speeches sp
     JOIN meetings mt ON mt.meeting_id = sp.meeting_id
+    WHERE sp.status = 'delivered'
     GROUP BY mt.club_id, sp.member_id
 )
 SELECT c.club_name, m.display_name, ct.speeches,
@@ -258,11 +264,13 @@ ORDER BY active_members, c.club_name;""",
         "before": """SELECT COUNT(*) AS all_speeches,
        COUNT(duration_sec) AS timed_speeches,
        ROUND(AVG(duration_sec), 1) AS avg_sec
-FROM speeches;""",
+FROM speeches
+WHERE status = 'delivered';""",
         "after": """SELECT COUNT(*) AS all_speeches,
        COUNT(duration_sec) AS timed_speeches,
        ROUND(SUM(duration_sec) * 1.0 / COUNT(*), 1) AS avg_sec
-FROM speeches;""",
+FROM speeches
+WHERE status = 'delivered';""",
         "change": "AVG(duration_sec) → SUM(duration_sec) * 1.0 / COUNT(*)",
         "why": "Some speeches have no recorded time (NULL). COUNT(*) counts every row, while COUNT(duration_sec) "
                "skips NULL. AVG also skips NULL, so it divides by the number of timed speeches. "
@@ -293,6 +301,7 @@ ORDER BY speech_id;""",
     FROM speeches sp
     JOIN meetings mt ON mt.meeting_id = sp.meeting_id
     WHERE mt.club_id = 1
+      AND sp.status = 'delivered'
     GROUP BY sp.member_id
 )
 SELECT m.display_name, ct.speeches,
@@ -305,6 +314,7 @@ ORDER BY ct.speeches DESC, m.display_name;""",
     FROM speeches sp
     JOIN meetings mt ON mt.meeting_id = sp.meeting_id
     WHERE mt.club_id = 1
+      AND sp.status = 'delivered'
     GROUP BY sp.member_id
 )
 SELECT m.display_name, ct.speeches,
@@ -344,7 +354,7 @@ QUERIES_ZH = {
            "question_zh": "哪些講者的演講次數高於全體講者的平均？"},
     "Q10": {"concept_zh": "CASE WHEN",
             "question_zh": "把 10 月的每場演講標示為未達時間（Under time）、合格（Qualified）、超時（Over time）或未記錄（Not recorded）。"},
-    "Q11": {"concept_zh": "COUNT(DISTINCT)、LEFT JOIN",
+    "Q11": {"concept_zh": "COUNT(DISTINCT)、條件寫在 LEFT JOIN 的 ON 裡",
             "question_zh": "每條 Pathways 路徑各有幾位不同的會員講過？總共幾場演講？"},
     "Q12": {"concept_zh": "WITH（CTE）",
             "question_zh": "每個區域有幾個分會、幾位有效會員？"},

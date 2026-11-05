@@ -101,8 +101,8 @@ window.TABLES = [
   },
   {
     name: "speeches",
-    about: "Prepared speeches given at meetings, with timing and evaluator.",
-    about_zh: "例會中的備稿演講，包含計時與講評員。",
+    about: "Prepared speeches at meetings, with timing and evaluator. Includes speeches that are only planned so far; status tells them apart.",
+    about_zh: "例會中的備稿演講，包含計時與講評員。也包含還在排定中的演講，用 status 區分。",
     columns: [
       ["speech_id", "INTEGER", "PK", "Speech number", "演講編號"],
       ["meeting_id", "INTEGER", "FK → meetings, NOT NULL", "Meeting where it was given", "在哪場例會發表"],
@@ -114,6 +114,7 @@ window.TABLES = [
       ["duration_sec", "INTEGER", "", "Actual length in seconds; NULL if not recorded", "實際演講秒數；沒有記錄時為 NULL"],
       ["min_sec", "INTEGER", "NOT NULL", "Minimum allowed length", "規定的最短秒數"],
       ["max_sec", "INTEGER", "NOT NULL, CHECK min_sec < max_sec", "Maximum allowed length", "規定的最長秒數"],
+      ["status", "VARCHAR(10)", "NOT NULL, DEFAULT 'planned', CHECK in ('planned','delivered','cancelled')", "Planned, delivered or cancelled. A delivered speech must have a speaker and an evaluator", "排定（planned）、已講（delivered）或取消（cancelled）。已講的演講必須有講者和講評員"],
     ],
   },
 ];

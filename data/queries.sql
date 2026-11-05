@@ -70,6 +70,7 @@ SELECT m.display_name,
        ROUND(AVG(sp.duration_sec), 1) AS avg_sec
 FROM speeches sp
 JOIN members m ON m.member_id = sp.member_id
+WHERE sp.status = 'delivered'
 GROUP BY m.member_id, m.display_name
 ORDER BY speeches DESC, m.display_name;
 
@@ -77,10 +78,12 @@ ORDER BY speeches DESC, m.display_name;
 SELECT m.display_name, COUNT(*) AS speeches
 FROM speeches sp
 JOIN members m ON m.member_id = sp.member_id
+WHERE sp.status = 'delivered'
 GROUP BY m.member_id, m.display_name
 HAVING COUNT(*) > (
     SELECT COUNT(member_id) * 1.0 / COUNT(DISTINCT member_id)
     FROM speeches
+    WHERE status = 'delivered'
 )
 ORDER BY speeches DESC, m.display_name;
 
@@ -97,6 +100,7 @@ FROM speeches sp
 JOIN meetings mt ON mt.meeting_id = sp.meeting_id
 JOIN members m   ON m.member_id = sp.member_id
 WHERE mt.meeting_date BETWEEN '2026-10-01' AND '2026-10-31'
+  AND sp.status = 'delivered'
 ORDER BY mt.meeting_date, sp.speech_id;
 
 -- Q11: For each Pathways path, how many different members have given a speech on it, and how many speeches?
@@ -105,6 +109,7 @@ SELECT p.path_name,
        COUNT(sp.speech_id) AS speeches
 FROM pathways p
 LEFT JOIN speeches sp ON sp.path_code = p.path_code
+                     AND sp.status = 'delivered'
 GROUP BY p.path_code, p.path_name
 ORDER BY members_on_path DESC, p.path_name;
 
@@ -131,6 +136,7 @@ WITH counts AS (
     SELECT mt.club_id, sp.member_id, COUNT(*) AS speeches
     FROM speeches sp
     JOIN meetings mt ON mt.meeting_id = sp.meeting_id
+    WHERE sp.status = 'delivered'
     GROUP BY mt.club_id, sp.member_id
 )
 SELECT c.club_name, m.display_name, ct.speeches,
@@ -205,13 +211,15 @@ ORDER BY active_members, c.club_name;
 SELECT COUNT(*) AS all_speeches,
        COUNT(duration_sec) AS timed_speeches,
        ROUND(AVG(duration_sec), 1) AS avg_sec
-FROM speeches;
+FROM speeches
+WHERE status = 'delivered';
 
 -- C3 after: AVG(duration_sec) → SUM(duration_sec) * 1.0 / COUNT(*)
 SELECT COUNT(*) AS all_speeches,
        COUNT(duration_sec) AS timed_speeches,
        ROUND(SUM(duration_sec) * 1.0 / COUNT(*), 1) AS avg_sec
-FROM speeches;
+FROM speeches
+WHERE status = 'delivered';
 
 -- C4 before: = NULL vs IS NULL
 SELECT speech_id, title
@@ -231,6 +239,7 @@ WITH counts AS (
     FROM speeches sp
     JOIN meetings mt ON mt.meeting_id = sp.meeting_id
     WHERE mt.club_id = 1
+      AND sp.status = 'delivered'
     GROUP BY sp.member_id
 )
 SELECT m.display_name, ct.speeches,
@@ -245,6 +254,7 @@ WITH counts AS (
     FROM speeches sp
     JOIN meetings mt ON mt.meeting_id = sp.meeting_id
     WHERE mt.club_id = 1
+      AND sp.status = 'delivered'
     GROUP BY sp.member_id
 )
 SELECT m.display_name, ct.speeches,

@@ -166,6 +166,7 @@ erDiagram
         INTEGER duration_sec
         INTEGER min_sec
         INTEGER max_sec
+        VARCHAR status
     }
         </pre>
       </div>
@@ -220,11 +221,15 @@ erDiagram
             </tr>
             <tr>
               <td><span data-lang="en">Speech evaluators are stored in <code>speeches.evaluator_id</code></span><span data-lang="zh">個別講評員記在 <code>speeches.evaluator_id</code></span></td>
-              <td><span data-lang="en">Each evaluator evaluates one specific speech. <code>role_assignments</code> only says who took a role in which meeting, not which speech they evaluated, so the evaluator is stored on the speech itself. Speeches are entered while the agenda is being planned, often before the speaker or the evaluator is found, so both <code>member_id</code> (speaker) and <code>evaluator_id</code> allow NULL, meaning “not known yet”. Every speech ends up with one speaker and one evaluator; the sample meetings are all in the past, so none of them is NULL.</span><span data-lang="zh">每位講評員講評的是某一場特定的演講。<code>role_assignments</code> 只記錄「誰在哪場例會擔任什麼角色」，記不了「講評哪一場演講」，所以講評員直接記在演講上。演講資料在排議程時就會建立，那時常常還沒找到講者或講評員，所以 <code>member_id</code>（講者）和 <code>evaluator_id</code> 都允許 NULL，代表「還不知道」。每場演講最後都會有一位講者和一位講評員；樣本資料的例會都已經結束，所以沒有 NULL。</span></td>
+              <td><span data-lang="en">Each evaluator evaluates one specific speech. <code>role_assignments</code> only says who took a role in which meeting, not which speech they evaluated, so the evaluator is stored on the speech itself. Speeches are entered while the agenda is being planned, often before the speaker or the evaluator is found, so both <code>member_id</code> (speaker) and <code>evaluator_id</code> allow NULL, meaning “not known yet”. A CHECK requires a speech with status <code>'delivered'</code> to have both. The sample meetings are all in the past, so none of them is NULL.</span><span data-lang="zh">每位講評員講評的是某一場特定的演講。<code>role_assignments</code> 只記錄「誰在哪場例會擔任什麼角色」，記不了「講評哪一場演講」，所以講評員直接記在演講上。演講資料在排議程時就會建立，那時常常還沒找到講者或講評員，所以 <code>member_id</code>（講者）和 <code>evaluator_id</code> 都允許 NULL，代表「還不知道」。另外用一條 CHECK 規定：狀態是 <code>'delivered'</code>（已講）的演講，兩者都必須有值。樣本資料的例會都已經結束，所以沒有 NULL。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en"><code>status</code> and <code>paid_through</code> are separate</span><span data-lang="zh"><code>status</code> 和 <code>paid_through</code> 分開</span></td>
               <td><span data-lang="en"><code>status</code> says whether the person is still in the club; <code>paid_through</code> says how far dues are paid. “Still in the club but not renewed” is the combination of both.</span><span data-lang="zh"><code>status</code> 記錄這個人還在不在分會；<code>paid_through</code> 記錄會費繳到哪天。「人還在但還沒續繳」是兩個欄位組合出來的狀態。</span></td>
+            </tr>
+            <tr>
+              <td><span data-lang="en"><code>speeches.status</code>: planned, delivered or cancelled</span><span data-lang="zh"><code>speeches.status</code>：排定、已講或取消</span></td>
+              <td><span data-lang="en">Speeches are entered while planning, so the table holds speeches that have not happened yet. Without a status, statistics such as Q8 would count a speech booked for next week as already given. New speeches default to <code>'planned'</code>, and the speech statistics (Q8–Q11, Q13, C3, C5) count only <code>'delivered'</code> ones. Trade-off: the database cannot tell that a meeting is over, so someone must change the status after the meeting.</span><span data-lang="zh">演講資料在排議程時就會建立，所以這張表裡也有還沒舉行的演講。如果沒有狀態欄位，像 Q8 這類統計會把下週才要講的演講也算成「講過」。新的演講預設為 <code>'planned'</code>（排定），演講相關的統計（Q8～Q11、Q13、C3、C5）只計算 <code>'delivered'</code>（已講）。代價：資料庫不知道例會辦完了沒，例會結束後要有人更新狀態。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en"><code>path_code</code> and <code>path_level</code> are filled together</span><span data-lang="zh"><code>path_code</code> 和 <code>path_level</code> 一起有值或一起為空</span></td>
@@ -263,6 +268,8 @@ erDiagram
       <p data-lang="zh">每張卡片都有一個問題、一段可執行的 SQL 解答和預期結果。修改 SQL 後按<kbd>執行</kbd>（或 <kbd>Ctrl</kbd>+<kbd>Enter</kbd>），就能看到實際結果或錯誤訊息。</p>
       <p class="hint" data-lang="en">“Active member” means <code>status = 'active'</code> and <code>paid_through &gt;= '2026-10-31'</code>. The date is fixed so the expected results never change.</p>
       <p class="hint" data-lang="zh">「有效會員」的定義是 <code>status = 'active'</code> 而且 <code>paid_through &gt;= '2026-10-31'</code>。日期是固定的，預期結果才不會隨時間改變。</p>
+      <p class="hint" data-lang="en">Speech statistics count only speeches that were given: <code>speeches.status = 'delivered'</code>. Planned and cancelled speeches are left out.</p>
+      <p class="hint" data-lang="zh">演講相關的統計只計算已經講過的演講：<code>speeches.status = 'delivered'</code>。排定中和已取消的演講不計入。</p>
       <div id="level-filter" class="filter" role="group" aria-label="Filter by level">
         <button class="chip is-on" data-level="All" type="button"><span data-lang="en">All</span><span data-lang="zh">全部</span></button>
         <button class="chip" data-level="Basic" type="button"><span data-lang="en">Basic</span><span data-lang="zh">基礎</span></button>
@@ -330,9 +337,9 @@ erDiagram
 
   <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-  <script src="js/design.js?v=7"></script>
-  <script src="js/queries.js?v=5"></script>
-  <script src="js/compare.js?v=3"></script>
+  <script src="js/design.js?v=8"></script>
+  <script src="js/queries.js?v=6"></script>
+  <script src="js/compare.js?v=4"></script>
   <script src="js/app.js?v=4"></script>
 </body>
 </html>

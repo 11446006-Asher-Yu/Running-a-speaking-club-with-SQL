@@ -353,7 +353,7 @@ window.QUERIES = [
     "concept": "GROUP BY, AVG, ROUND",
     "user": "VP Education",
     "question": "For each speaker, how many speeches have they given and what is their average length in seconds?",
-    "sql": "SELECT m.display_name,\n       COUNT(*) AS speeches,\n       ROUND(AVG(sp.duration_sec), 1) AS avg_sec\nFROM speeches sp\nJOIN members m ON m.member_id = sp.member_id\nGROUP BY m.member_id, m.display_name\nORDER BY speeches DESC, m.display_name;",
+    "sql": "SELECT m.display_name,\n       COUNT(*) AS speeches,\n       ROUND(AVG(sp.duration_sec), 1) AS avg_sec\nFROM speeches sp\nJOIN members m ON m.member_id = sp.member_id\nWHERE sp.status = 'delivered'\nGROUP BY m.member_id, m.display_name\nORDER BY speeches DESC, m.display_name;",
     "concept_zh": "GROUP BY、AVG、ROUND",
     "question_zh": "每位講者講過幾場演講？平均長度是幾秒？",
     "expected": {
@@ -592,7 +592,7 @@ window.QUERIES = [
     "concept": "Subquery in HAVING",
     "user": "VP Education",
     "question": "Which speakers gave more speeches than the average speaker?",
-    "sql": "SELECT m.display_name, COUNT(*) AS speeches\nFROM speeches sp\nJOIN members m ON m.member_id = sp.member_id\nGROUP BY m.member_id, m.display_name\nHAVING COUNT(*) > (\n    SELECT COUNT(member_id) * 1.0 / COUNT(DISTINCT member_id)\n    FROM speeches\n)\nORDER BY speeches DESC, m.display_name;",
+    "sql": "SELECT m.display_name, COUNT(*) AS speeches\nFROM speeches sp\nJOIN members m ON m.member_id = sp.member_id\nWHERE sp.status = 'delivered'\nGROUP BY m.member_id, m.display_name\nHAVING COUNT(*) > (\n    SELECT COUNT(member_id) * 1.0 / COUNT(DISTINCT member_id)\n    FROM speeches\n    WHERE status = 'delivered'\n)\nORDER BY speeches DESC, m.display_name;",
     "concept_zh": "HAVING 裡的子查詢",
     "question_zh": "哪些講者的演講次數高於全體講者的平均？",
     "expected": {
@@ -678,7 +678,7 @@ window.QUERIES = [
     "concept": "CASE WHEN",
     "user": "Timer",
     "question": "Label every October speech as Under time, Qualified, Over time or Not recorded.",
-    "sql": "SELECT mt.meeting_date, m.display_name, sp.duration_sec,\n       sp.min_sec, sp.max_sec,\n       CASE\n           WHEN sp.duration_sec IS NULL       THEN 'Not recorded'\n           WHEN sp.duration_sec < sp.min_sec  THEN 'Under time'\n           WHEN sp.duration_sec > sp.max_sec  THEN 'Over time'\n           ELSE 'Qualified'\n       END AS timing\nFROM speeches sp\nJOIN meetings mt ON mt.meeting_id = sp.meeting_id\nJOIN members m   ON m.member_id = sp.member_id\nWHERE mt.meeting_date BETWEEN '2026-10-01' AND '2026-10-31'\nORDER BY mt.meeting_date, sp.speech_id;",
+    "sql": "SELECT mt.meeting_date, m.display_name, sp.duration_sec,\n       sp.min_sec, sp.max_sec,\n       CASE\n           WHEN sp.duration_sec IS NULL       THEN 'Not recorded'\n           WHEN sp.duration_sec < sp.min_sec  THEN 'Under time'\n           WHEN sp.duration_sec > sp.max_sec  THEN 'Over time'\n           ELSE 'Qualified'\n       END AS timing\nFROM speeches sp\nJOIN meetings mt ON mt.meeting_id = sp.meeting_id\nJOIN members m   ON m.member_id = sp.member_id\nWHERE mt.meeting_date BETWEEN '2026-10-01' AND '2026-10-31'\n  AND sp.status = 'delivered'\nORDER BY mt.meeting_date, sp.speech_id;",
     "concept_zh": "CASE WHEN",
     "question_zh": "把 10 月的每場演講標示為未達時間（Under time）、合格（Qualified）、超時（Over time）或未記錄（Not recorded）。",
     "expected": {
@@ -825,11 +825,11 @@ window.QUERIES = [
   {
     "id": "Q11",
     "level": "Advanced",
-    "concept": "COUNT(DISTINCT), LEFT JOIN",
+    "concept": "COUNT(DISTINCT), condition inside LEFT JOIN ... ON",
     "user": "VP Education",
     "question": "For each Pathways path, how many different members have given a speech on it, and how many speeches?",
-    "sql": "SELECT p.path_name,\n       COUNT(DISTINCT sp.member_id) AS members_on_path,\n       COUNT(sp.speech_id) AS speeches\nFROM pathways p\nLEFT JOIN speeches sp ON sp.path_code = p.path_code\nGROUP BY p.path_code, p.path_name\nORDER BY members_on_path DESC, p.path_name;",
-    "concept_zh": "COUNT(DISTINCT)、LEFT JOIN",
+    "sql": "SELECT p.path_name,\n       COUNT(DISTINCT sp.member_id) AS members_on_path,\n       COUNT(sp.speech_id) AS speeches\nFROM pathways p\nLEFT JOIN speeches sp ON sp.path_code = p.path_code\n                     AND sp.status = 'delivered'\nGROUP BY p.path_code, p.path_name\nORDER BY members_on_path DESC, p.path_name;",
+    "concept_zh": "COUNT(DISTINCT)、條件寫在 LEFT JOIN 的 ON 裡",
     "question_zh": "每條 Pathways 路徑各有幾位不同的會員講過？總共幾場演講？",
     "expected": {
       "columns": [
@@ -915,7 +915,7 @@ window.QUERIES = [
     "concept": "Window function RANK() OVER (PARTITION BY)",
     "user": "VP Education",
     "question": "Within each club, rank speakers by number of speeches.",
-    "sql": "WITH counts AS (\n    SELECT mt.club_id, sp.member_id, COUNT(*) AS speeches\n    FROM speeches sp\n    JOIN meetings mt ON mt.meeting_id = sp.meeting_id\n    GROUP BY mt.club_id, sp.member_id\n)\nSELECT c.club_name, m.display_name, ct.speeches,\n       RANK() OVER (PARTITION BY ct.club_id ORDER BY ct.speeches DESC) AS club_rank\nFROM counts ct\nJOIN clubs c   ON c.club_id = ct.club_id\nJOIN members m ON m.member_id = ct.member_id\nORDER BY c.club_name, club_rank, m.display_name;",
+    "sql": "WITH counts AS (\n    SELECT mt.club_id, sp.member_id, COUNT(*) AS speeches\n    FROM speeches sp\n    JOIN meetings mt ON mt.meeting_id = sp.meeting_id\n    WHERE sp.status = 'delivered'\n    GROUP BY mt.club_id, sp.member_id\n)\nSELECT c.club_name, m.display_name, ct.speeches,\n       RANK() OVER (PARTITION BY ct.club_id ORDER BY ct.speeches DESC) AS club_rank\nFROM counts ct\nJOIN clubs c   ON c.club_id = ct.club_id\nJOIN members m ON m.member_id = ct.member_id\nORDER BY c.club_name, club_rank, m.display_name;",
     "concept_zh": "視窗函數 RANK() OVER (PARTITION BY)",
     "question_zh": "在每個分會內，依演講次數替講者排名。",
     "expected": {

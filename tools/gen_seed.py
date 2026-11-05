@@ -237,7 +237,9 @@ parts = [
     insert("role_assignments", ["meeting_id", "role_code", "member_id"], assignments),
     insert("pathways", ["path_code", "path_name"], PATHWAYS),
     insert("speeches", ["speech_id", "meeting_id", "member_id", "evaluator_id", "path_code",
-                        "path_level", "title", "duration_sec", "min_sec", "max_sec"], speeches),
+                        "path_level", "title", "duration_sec", "min_sec", "max_sec", "status"],
+           # every sample meeting is in the past, so every speech has been delivered
+           [s + ("delivered",) for s in speeches]),
 ]
 OUT.write_text("\n".join(parts), encoding="utf-8", newline="\n")
 print(f"members={len(members)} memberships={len(memberships)} meetings={len(meetings)} "
