@@ -55,7 +55,7 @@
         <li><strong>Slow answers.</strong> Questions like “who has never taken a role?” take a lot of manual counting.</li>
       </ul>
       <h3 class="sub">The solution</h3>
-      <p>Put members, clubs, meetings, roles and speeches into one normalized relational database, so each of these questions becomes a single SQL query.</p>
+      <p>Put members, clubs, meetings, roles and speeches into one relational database where each fact is stored only once, so each of these questions becomes a single SQL query.</p>
     </section>
 
     <!-- 2. Design -->
@@ -169,7 +169,8 @@ erDiagram
             <tr><td><code>status</code> and <code>paid_through</code> are separate</td><td><code>status</code> says whether the person is still in the club; <code>paid_through</code> says how far dues are paid. “Still in the club but not renewed” is the combination of both.</td></tr>
             <tr><td>Time limits stored on each speech</td><td>Different projects have different limits, so <code>min_sec</code>/<code>max_sec</code> are needed to judge each speech.</td></tr>
             <tr><td>No phone, email or address columns</td><td>None of the questions need them. Collecting only what is needed protects privacy.</td></tr>
-            <tr><td>Third normal form (3NF)</td><td>Every non-key column depends only on its table’s key. For example, a club’s area is stored only in <code>clubs</code>, never repeated in <code>meetings</code>.</td></tr>
+            <tr><td>Each fact is stored in one place</td><td>“Area A1 belongs to Division A” is stored once in <code>areas</code>, not repeated in every club row; a meeting stores only its <code>club_id</code>, not the club’s area. If a fact were copied into many rows, updating only some copies would leave the data contradicting itself.</td></tr>
+            <tr><td><code>clubs</code> has two candidate keys</td><td>Both <code>club_id</code> and <code>club_name</code> identify a club. <code>club_id</code> is chosen as the primary key because a single short integer never needs to change; <code>club_name</code> stays a unique key, declared <code>UNIQUE</code>, so names still cannot repeat.</td></tr>
           </tbody>
         </table>
       </div>
