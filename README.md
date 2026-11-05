@@ -30,13 +30,14 @@ The page is bilingual (English / Traditional Chinese). Use the button at the top
 | Path | Purpose |
 |---|---|
 | `index.html`, `css/`, `js/app.js` | The web page |
-| `js/design.js` | Column dictionary shown in the Design section |
+| `js/design.js` | Column dictionary shown in the Design section (English and Chinese) |
 | `data/schema.sql` | `CREATE TABLE` statements |
 | `data/seed.sql` | Sample data (generated) |
 | `data/queries.sql` | All practice SQL in one file, for checking in MySQL (generated) |
 | `js/queries.js`, `js/compare.js` | Questions, SQL and expected results (generated) |
 | `tools/gen_seed.py` | Generates `seed.sql` with a fixed random seed |
-| `tools/build_queries.py` | Holds all practice SQL; runs it and writes the expected results |
+| `tools/build_queries.py` | Holds all practice SQL and its Chinese text; runs it and writes the expected results |
+| `tools/verify_mysql.py` | Runs all practice SQL on MySQL and compares with the expected results |
 
 ## Run locally
 

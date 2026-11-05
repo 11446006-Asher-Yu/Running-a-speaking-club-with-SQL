@@ -82,16 +82,27 @@
     db.exec(seedSql);
   }
 
+  // Rows changed since the database was opened. getRowsModified() is not reset by
+  // statements such as CREATE TABLE, so each statement's count is a difference of this.
+  function totalChanges() {
+    const stmt = db.prepare("SELECT total_changes()");
+    stmt.step();
+    const n = stmt.get()[0];
+    stmt.free();
+    return n;
+  }
+
   // Runs one or more statements; returns the result of the last one.
   function runSql(sql) {
     let last = null;
     try {
       for (const stmt of db.iterateStatements(sql)) {
+        const before = totalChanges();
         const columns = stmt.getColumnNames();
         const rows = [];
         while (stmt.step()) rows.push(stmt.get());
         stmt.free();
-        last = { columns, rows, changed: db.getRowsModified() };
+        last = { columns, rows, changed: totalChanges() - before };
       }
     } catch (e) {
       return { error: e.message };

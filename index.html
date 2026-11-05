@@ -224,7 +224,7 @@ erDiagram
             </tr>
             <tr>
               <td><span data-lang="en">Each fact is stored in one place</span><span data-lang="zh">每件事只存一次</span></td>
-              <td><span data-lang="en">“Area A1 belongs to Division A” is stored once in <code>areas</code>, not repeated in every club row; a meeting stores only its <code>club_id</code>, not the club’s area. If a fact were copied into many rows, updating only some copies would leave the data contradicting itself.</span><span data-lang="zh">「A1 屬於 Division A」只存在 <code>areas</code> 一次，不在每個分會的資料列重複；例會只存 <code>club_id</code>，不重複存分會的區域。如果同一件事複製在很多列，修改時只改到部分，資料就會互相矛盾。</span></td>
+              <td><span data-lang="en">“Area A1 belongs to Division A” is stored once in <code>areas</code>, not repeated in every club row; a meeting stores only its <code>club_id</code>, not the club’s area. If a fact were copied into many rows, updating only some copies would leave the data contradicting itself. One deliberate exception: <code>members.first_join_date</code> could be computed as <code>MIN(memberships.start_date)</code>, but it is kept so the date survives if old memberships are deleted; the two must be kept in step.</span><span data-lang="zh">「A1 屬於 Division A」只存在 <code>areas</code> 一次，不在每個分會的資料列重複；例會只存 <code>club_id</code>，不重複存分會的區域。如果同一件事複製在很多列，修改時只改到部分，資料就會互相矛盾。刻意保留的例外：<code>members.first_join_date</code> 其實可以用 <code>MIN(memberships.start_date)</code> 算出來，另外存是為了在舊會籍紀錄被刪除後仍保留這個日期；代價是兩邊要保持一致。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en"><code>clubs</code> has two candidate keys</span><span data-lang="zh"><code>clubs</code> 有兩個候選鍵</span></td>
@@ -317,6 +317,6 @@ erDiagram
   <script src="js/design.js?v=3"></script>
   <script src="js/queries.js?v=3"></script>
   <script src="js/compare.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 </html>
