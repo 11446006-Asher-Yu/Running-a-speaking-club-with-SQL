@@ -210,3 +210,24 @@ details.expected summary { cursor: pointer; color: var(--muted); font-size: 0.92
 /* language switch: show only the active language (html[data-ui] is set before paint) */
 html[data-ui="zh"] [data-lang="en"],
 html:not([data-ui="zh"]) [data-lang="zh"] { display: none !important; }
+
+/* let grid columns shrink below their content, so wide results scroll inside their box instead of widening the page */
+.stack, .grid-3, .cmp-grid { min-width: 0; }
+.stack { grid-template-columns: minmax(0, 1fr); }
+.cmp-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+.stack > *, .grid-3 > *, .cmp-grid > * { min-width: 0; }
+.q-head .tag, .change, .why, .q-question, .hint, .doc-table td { overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .cmp-grid { grid-template-columns: minmax(0, 1fr); }
+  /* iOS zooms in on focus when an input's font is under 16px */
+  .editor { font-size: 16px; }
+}
+
+/* small screens: keep the ERD readable and let it scroll sideways inside its box */
+.erd-hint { display: none; }
+@media (max-width: 760px) {
+  .erd .mermaid svg { min-width: 720px; max-width: none !important; }
+  .erd-hint { display: block; margin: 0 0 8px; }
+}
