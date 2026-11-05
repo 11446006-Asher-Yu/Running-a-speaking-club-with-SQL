@@ -5,6 +5,9 @@ Course project for Database Management, National Taipei University of Business.
 Author: 余欣嬨 (11446006)
 
 **Live site:** https://11446006-asher-yu.github.io/Running-a-speaking-club-with-SQL/
+**中文版：** https://11446006-asher-yu.github.io/Running-a-speaking-club-with-SQL/?lang=zh
+
+The page is bilingual (English / Traditional Chinese). Use the button at the top right to switch.
 
 > **Data notice:** every person, club, meeting and speech in this database is fictional. No real member data is used.
 

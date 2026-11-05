@@ -1,9 +1,19 @@
 // Club Operations SQL Lab: loads SQLite (sql.js), builds the database, renders every section.
+// Every piece of interface text is rendered in both English and Chinese; CSS shows the
+// language chosen in <html data-ui>, so switching never re-renders or loses edited SQL.
 (function () {
   "use strict";
 
   const SQLJS_CDN = "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/";
   const SAMPLE_ROWS = 5;
+  const TITLES = { en: "Club Operations SQL Lab", zh: "分會營運 SQL 實驗室" };
+  const LEVEL_ZH = { Basic: "基礎", Intermediate: "中級", Advanced: "進階" };
+  const USER_ZH = {
+    "VP Education": "教育副會長",
+    "VP Membership": "會員副會長",
+    "Area Director": "區域總監",
+    "Timer": "計時員",
+  };
 
   let SQL = null;
   let db = null;
@@ -26,10 +36,41 @@
     return node;
   }
 
+  // English and Chinese versions of the same text; CSS hides the inactive one.
+  function bi(en, zh) {
+    const frag = document.createDocumentFragment();
+    frag.append(el("span", { "data-lang": "en", text: en }), el("span", { "data-lang": "zh", text: zh }));
+    return frag;
+  }
+
+  function setBi(node, en, zh) {
+    node.replaceChildren(bi(en, zh));
+  }
+
   async function fetchText(path) {
     const res = await fetch(path);
     if (!res.ok) throw new Error(`Could not load ${path} (${res.status})`);
     return res.text();
+  }
+
+  // ---------- language ----------
+  function setLanguage(lang) {
+    const root = document.documentElement;
+    root.dataset.ui = lang;
+    root.lang = lang === "zh" ? "zh-Hant-TW" : "en";
+    document.title = TITLES[lang];
+    try { localStorage.setItem("ui-lang", lang); } catch (e) { /* storage unavailable */ }
+    const url = new URL(location.href);
+    if (lang === "zh") url.searchParams.set("lang", "zh");
+    else url.searchParams.delete("lang");
+    history.replaceState(null, "", url);
+  }
+
+  function initLanguage() {
+    setLanguage(document.documentElement.dataset.ui === "zh" ? "zh" : "en");
+    $("#lang-toggle").addEventListener("click", () => {
+      setLanguage(document.documentElement.dataset.ui === "zh" ? "en" : "zh");
+    });
   }
 
   // ---------- database ----------
@@ -59,14 +100,29 @@
     return last;
   }
 
+  // Returns [english, chinese] or null.
   function hintFor(message) {
-    if (/no such table/i.test(message)) return "Check the table name. Tables are: " + window.TABLES.map(t => t.name).join(", ") + ".";
-    if (/no such column/i.test(message)) return "Check the column name and its table alias. See the Design section for every column.";
-    if (/misuse of aggregate/i.test(message)) return "Aggregate functions such as COUNT() cannot be used in WHERE. Filter groups with HAVING instead.";
-    if (/syntax error/i.test(message)) return "There is a syntax error near the word shown. Look for a missing comma, quote or keyword.";
-    if (/ambiguous column/i.test(message)) return "Two joined tables have this column. Prefix it with a table alias, e.g. m.member_id.";
-    if (/constraint failed/i.test(message)) return "The change breaks a constraint (primary key, foreign key, UNIQUE or CHECK).";
-    return "";
+    const tables = window.TABLES.map(t => t.name).join(", ");
+    if (/no such table/i.test(message)) return [
+      "Check the table name. Tables are: " + tables + ".",
+      "請檢查資料表名稱。資料表有：" + tables + "。"];
+    if (/no such column/i.test(message)) return [
+      "Check the column name and its table alias. See the Design section for every column.",
+      "請檢查欄位名稱和資料表別名。所有欄位都列在「資料庫設計」區塊。"];
+    if (/misuse of aggregate/i.test(message)) return [
+      "Aggregate functions such as COUNT() cannot be used in WHERE. Filter groups with HAVING instead.",
+      "COUNT() 這類彙總函數不能用在 WHERE。要篩選群組，請改用 HAVING。"];
+    if (/syntax error/i.test(message)) return [
+      "There is a syntax error near the word shown. Look for a missing comma, quote or keyword.",
+      "錯誤訊息中那個字附近有語法錯誤。請檢查是否少了逗號、引號或關鍵字。"];
+    if (/ambiguous column/i.test(message)) return [
+      "Two joined tables have this column. Prefix it with a table alias, e.g. m.member_id.",
+      "JOIN 的兩張資料表都有這個欄位。請在欄位前加上資料表別名，例如 m.member_id。"];
+    if (/constraint failed/i.test(message)) return [
+      "The change breaks a constraint (primary key, foreign key, UNIQUE or CHECK).",
+      "這筆修改違反了限制條件（主鍵、外鍵、UNIQUE 或 CHECK）。"];
+    if (/No SQL statement/i.test(message)) return ["", "沒有可以執行的 SQL 指令。"];
+    return null;
   }
 
   // ---------- rendering results ----------
@@ -89,16 +145,17 @@
     if (result.error) {
       const hint = hintFor(result.error);
       box.append(el("div", { class: "msg msg-error", role: "alert" },
-        el("pre", { text: "Error: " + result.error }),
-        hint ? el("div", { text: hint }) : null));
+        el("pre", {}, bi("Error: ", "錯誤："), result.error),
+        hint ? el("div", {}, bi(hint[0], hint[1])) : null));
       return box;
     }
     if (result.columns.length === 0) {
-      box.append(el("div", { class: "msg msg-info", text: `Statement executed. ${result.changed} row(s) changed.` }));
+      box.append(el("div", { class: "msg msg-info" },
+        bi(`Statement executed. ${result.changed} row(s) changed.`, `指令已執行，共異動 ${result.changed} 列。`)));
       return box;
     }
     box.append(renderTable(result.columns, result.rows));
-    box.append(el("p", { class: "result-meta", text: `${result.rows.length} row(s)` }));
+    box.append(el("p", { class: "result-meta" }, bi(`${result.rows.length} row(s)`, `共 ${result.rows.length} 列`)));
     return box;
   }
 
@@ -123,11 +180,15 @@
     return ta;
   }
 
-  function runButton(label, onClick) {
-    const b = el("button", { class: "btn", type: "button", text: label, onclick: onClick });
+  function runButton(onClick) {
+    const b = el("button", { class: "btn", type: "button", onclick: onClick }, bi("Run", "執行"));
     b.disabled = !db;
     runButtons.push(b);
     return b;
+  }
+
+  function resetSqlButton(onClick) {
+    return el("button", { class: "btn btn-ghost", type: "button", onclick: onClick }, bi("Reset SQL", "還原 SQL"));
   }
 
   // ---------- section 2: tables ----------
@@ -143,24 +204,28 @@
       detail.innerHTML = "";
       const card = el("div", { class: "card" });
       card.append(el("h3", {}, el("code", { text: table.name })));
-      card.append(el("p", { text: table.about }));
+      card.append(el("p", {}, bi(table.about, table.about_zh)));
+      const headers = [["Column", "欄位"], ["Type", "型別"], ["Constraints", "限制"], ["Description", "說明"]];
       const dict = el("table", { class: "doc-table" },
-        el("thead", {}, el("tr", {}, ...["Column", "Type", "Constraints", "Description"].map(h => el("th", { text: h })))),
+        el("thead", {}, el("tr", {}, ...headers.map(h => el("th", {}, bi(h[0], h[1]))))),
         el("tbody", {}, ...table.columns.map(c => el("tr", {},
-          el("td", {}, el("code", { text: c[0] })), el("td", { text: c[1] }), el("td", { text: c[2] }), el("td", { text: c[3] })))));
+          el("td", {}, el("code", { text: c[0] })), el("td", { text: c[1] }), el("td", { text: c[2] }),
+          el("td", {}, bi(c[3], c[4]))))));
       card.append(el("div", { class: "table-scroll" }, dict));
 
       if (db) {
         const total = runSql(`SELECT COUNT(*) FROM ${table.name};`);
         const count = total.error ? "?" : total.rows[0][0];
-        card.append(el("p", { class: "result-label", text: `Sample data · ${count} rows in total` }));
+        card.append(el("p", { class: "result-label" },
+          bi(`Sample data · ${count} rows in total`, `樣本資料 · 共 ${count} 列`)));
         const area = el("div");
         const draw = all => {
           area.innerHTML = "";
           const res = runSql(`SELECT * FROM ${table.name}${all ? "" : " LIMIT " + SAMPLE_ROWS};`);
           area.append(renderResult(res));
           if (!all && count > SAMPLE_ROWS) {
-            area.append(el("button", { class: "btn btn-ghost", type: "button", text: `Show all ${count} rows`, onclick: () => draw(true) }));
+            area.append(el("button", { class: "btn btn-ghost", type: "button", onclick: () => draw(true) },
+              bi(`Show all ${count} rows`, `顯示全部 ${count} 列`)));
           }
         };
         draw(false);
@@ -189,27 +254,28 @@
         if (!db) return;
         const res = runSql(ta.value);
         out.innerHTML = "";
-        out.append(el("p", { class: "result-label", text: "Actual result" }), renderResult(res));
+        out.append(el("p", { class: "result-label" }, bi("Actual result", "實際結果")), renderResult(res));
         const ok = sameResult(res, q.expected);
         badge.className = "badge " + (ok ? "badge-ok" : "badge-diff");
-        badge.textContent = ok ? "✓ Matches expected result" : "≠ Different from expected result";
+        if (ok) setBi(badge, "✓ Matches expected result", "✓ 與預期結果相同");
+        else setBi(badge, "≠ Different from expected result", "≠ 與預期結果不同");
       };
       ta = editor(q.sql, run);
-      const reset = el("button", { class: "btn btn-ghost", type: "button", text: "Reset SQL", onclick: () => {
-        ta.value = q.sql; out.innerHTML = ""; badge.className = ""; badge.textContent = "";
-      } });
+      const reset = resetSqlButton(() => {
+        ta.value = q.sql; out.innerHTML = ""; badge.className = ""; badge.replaceChildren();
+      });
       const expected = el("details", { class: "expected" },
-        el("summary", { text: "Expected result" }), renderResult(q.expected));
+        el("summary", {}, bi("Expected result", "預期結果")), renderResult(q.expected));
 
       list.append(el("article", { class: "card q-card", "data-level": q.level },
         el("div", { class: "q-head" },
           el("span", { class: "q-id", text: q.id }),
-          el("span", { class: "tag tag-" + q.level, text: q.level }),
-          el("span", { class: "tag", text: q.concept }),
-          el("span", { class: "tag", text: "For: " + q.user })),
-        el("p", { class: "q-question", text: q.question }),
+          el("span", { class: "tag tag-" + q.level }, bi(q.level, LEVEL_ZH[q.level])),
+          el("span", { class: "tag" }, bi(q.concept, q.concept_zh)),
+          el("span", { class: "tag" }, bi("For: " + q.user, "使用者：" + USER_ZH[q.user]))),
+        el("p", { class: "q-question" }, bi(q.question, q.question_zh)),
         ta,
-        el("div", { class: "actions" }, runButton("Run", run), reset, badge),
+        el("div", { class: "actions" }, runButton(run), reset, badge),
         expected,
         out));
     }
@@ -226,7 +292,7 @@
   }
 
   // ---------- section 4: comparisons ----------
-  function comparePane(title, sql) {
+  function comparePane(titleEn, titleZh, sql) {
     const out = el("div", { class: "result" });
     let ta;
     const run = () => {
@@ -236,10 +302,10 @@
     };
     ta = editor(sql, run);
     const pane = el("div", { class: "cmp-pane" },
-      el("h4", { text: title }), ta,
+      el("h4", {}, bi(titleEn, titleZh)), ta,
       el("div", { class: "actions" },
-        runButton("Run", run),
-        el("button", { class: "btn btn-ghost", type: "button", text: "Reset SQL", onclick: () => { ta.value = sql; run(); } })),
+        runButton(run),
+        resetSqlButton(() => { ta.value = sql; run(); })),
       out);
     pane.run = run;
     return pane;
@@ -251,18 +317,20 @@
     const list = $("#compare-list");
     list.innerHTML = "";
     for (const c of window.COMPARISONS) {
-      const before = comparePane("Before", c.before);
-      const after = comparePane("After", c.after);
+      const before = comparePane("Before", "修改前", c.before);
+      const after = comparePane("After", "修改後", c.after);
       comparePanes.push(before, after);
       list.append(el("article", { class: "card" },
         el("div", { class: "q-head" },
           el("span", { class: "q-id", text: c.id }),
-          el("span", { class: "tag", text: c.topic }),
-          el("span", { class: "tag", text: "Related to " + c.related })),
-        el("p", { class: "q-question", text: c.question }),
-        el("p", {}, el("span", { class: "change", text: "Change: " + c.change })),
+          el("span", { class: "tag" }, bi(c.topic, c.topic_zh)),
+          el("span", { class: "tag" }, bi("Related to " + c.related, "對應 " + c.related))),
+        el("p", { class: "q-question" }, bi(c.question, c.question_zh)),
+        el("p", {}, el("span", { class: "change" }, bi("Change: " + c.change, "修改：" + c.change_zh))),
         el("div", { class: "cmp-grid" }, before, after),
-        el("div", { class: "why" }, el("strong", { text: "Why: " }), c.why)));
+        el("div", { class: "why" },
+          el("strong", {}, bi("Why: ", "原因：")),
+          bi(c.why, c.why_zh))));
     }
   }
 
@@ -273,7 +341,7 @@
     const run = () => {
       if (!db) return;
       out.innerHTML = "";
-      out.append(el("p", { class: "result-label", text: "Result" }), renderResult(runSql(ta.value)));
+      out.append(el("p", { class: "result-label" }, bi("Result", "結果")), renderResult(runSql(ta.value)));
     };
     const runBtn = $("#play-run");
     runBtn.addEventListener("click", run);
@@ -299,6 +367,7 @@
   }
 
   async function init() {
+    initLanguage();
     initMermaid();
     renderQueries();
     renderComparisons();
@@ -310,8 +379,10 @@
       resetDb();
     } catch (e) {
       status.className = "status status-error";
-      status.textContent = "Could not start the SQL engine: " + e.message +
-        (location.protocol === "file:" ? " (open this page through a web server, not as a local file)" : "");
+      const local = location.protocol === "file:";
+      setBi(status,
+        "Could not start the SQL engine: " + e.message + (local ? " (open this page through a web server, not as a local file)" : ""),
+        "SQL 引擎無法啟動：" + e.message + (local ? "（請透過網頁伺服器開啟，不要直接開啟本機檔案）" : ""));
       renderTables();
       return;
     }
@@ -322,12 +393,12 @@
       resetDb();
       renderTables();
       comparePanes.forEach(p => p.run());
-      status.textContent = "Database reset to the original sample data.";
+      setBi(status, "Database reset to the original sample data.", "資料庫已還原成原始樣本資料。");
     });
     renderTables();
     comparePanes.forEach(p => p.run());
     status.className = "status status-ready";
-    status.textContent = "SQL engine ready · SQLite in your browser";
+    setBi(status, "SQL engine ready · SQLite in your browser", "SQL 引擎已就緒 · 在瀏覽器中執行 SQLite");
   }
 
   document.addEventListener("DOMContentLoaded", init);

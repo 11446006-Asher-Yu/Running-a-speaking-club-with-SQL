@@ -7,6 +7,8 @@ window.QUERIES = [
     "user": "Area Director",
     "question": "List the clubs in Area A1, with their city and meeting day.",
     "sql": "SELECT club_name, city, meeting_weekday\nFROM clubs\nWHERE area_id = 'A1'\nORDER BY club_name;",
+    "concept_zh": "SELECT、WHERE",
+    "question_zh": "列出 A1 區域的所有分會，以及所在城市和例會星期。",
     "expected": {
       "columns": [
         "club_name",
@@ -34,6 +36,8 @@ window.QUERIES = [
     "user": "VP Membership",
     "question": "Who are the 10 longest-serving members (earliest first join date)?",
     "sql": "SELECT member_id, display_name, first_join_date\nFROM members\nORDER BY first_join_date, member_id\nLIMIT 10;",
+    "concept_zh": "ORDER BY、LIMIT",
+    "question_zh": "資歷最久的 10 位會員是誰？（依首次加入日期，最早的排前面）",
     "expected": {
       "columns": [
         "member_id",
@@ -101,6 +105,8 @@ window.QUERIES = [
     "user": "Area Director",
     "question": "How many active members does each club have? (Active = status 'active' and dues paid through 2026-10-31 or later.)",
     "sql": "SELECT c.club_name, COUNT(ms.membership_id) AS active_members\nFROM clubs c\nJOIN memberships ms ON ms.club_id = c.club_id\nWHERE ms.status = 'active'\n  AND ms.paid_through >= '2026-10-31'\nGROUP BY c.club_id, c.club_name\nORDER BY active_members DESC, c.club_name;",
+    "concept_zh": "JOIN、GROUP BY、COUNT",
+    "question_zh": "每個分會目前有幾位有效會員？（有效會員：狀態為 'active'，且會費繳到 2026-10-31 或之後）",
     "expected": {
       "columns": [
         "club_name",
@@ -141,6 +147,8 @@ window.QUERIES = [
     "user": "Area Director",
     "question": "Which clubs have fewer than 20 active members and may need support?",
     "sql": "SELECT c.club_name, COUNT(ms.membership_id) AS active_members\nFROM clubs c\nJOIN memberships ms ON ms.club_id = c.club_id\nWHERE ms.status = 'active'\n  AND ms.paid_through >= '2026-10-31'\nGROUP BY c.club_id, c.club_name\nHAVING COUNT(ms.membership_id) < 20\nORDER BY active_members, c.club_name;",
+    "concept_zh": "HAVING",
+    "question_zh": "哪些分會的有效會員少於 20 人，可能需要協助？",
     "expected": {
       "columns": [
         "club_name",
@@ -173,6 +181,8 @@ window.QUERIES = [
     "user": "VP Membership",
     "question": "Which members are still in a club but have not renewed their dues (paid through date is before 2026-10-31)?",
     "sql": "SELECT m.display_name, c.club_name, ms.paid_through\nFROM memberships ms\nJOIN members m ON m.member_id = ms.member_id\nJOIN clubs c   ON c.club_id = ms.club_id\nWHERE ms.status = 'active'\n  AND ms.paid_through < '2026-10-31'\nORDER BY c.club_name, m.display_name;",
+    "concept_zh": "多條件 WHERE、日期比較",
+    "question_zh": "哪些會員還在分會裡，但還沒續繳會費？（會費只繳到 2026-10-31 之前）",
     "expected": {
       "columns": [
         "display_name",
@@ -235,6 +245,8 @@ window.QUERIES = [
     "user": "VP Education",
     "question": "Show the full role sheet of meeting #1: date, club, role and who takes it.",
     "sql": "SELECT mt.meeting_date, c.club_name, r.role_name, m.display_name\nFROM role_assignments ra\nJOIN meetings mt ON mt.meeting_id = ra.meeting_id\nJOIN clubs c     ON c.club_id = mt.club_id\nJOIN roles r     ON r.role_code = ra.role_code\nJOIN members m   ON m.member_id = ra.member_id\nWHERE ra.meeting_id = 1\nORDER BY r.category, r.role_name;",
+    "concept_zh": "多表 JOIN",
+    "question_zh": "列出第 1 場例會的完整角色表：日期、分會、角色和擔任者。",
     "expected": {
       "columns": [
         "meeting_date",
@@ -289,6 +301,8 @@ window.QUERIES = [
     "user": "VP Education",
     "question": "Which active members of Sunrise Speakers Club (club 1) have never taken a meeting role?",
     "sql": "SELECT m.member_id, m.display_name\nFROM memberships ms\nJOIN members m ON m.member_id = ms.member_id\nLEFT JOIN role_assignments ra ON ra.member_id = m.member_id\nWHERE ms.club_id = 1\n  AND ms.status = 'active'\n  AND ms.paid_through >= '2026-10-31'\n  AND ra.member_id IS NULL\nORDER BY m.display_name;",
+    "concept_zh": "LEFT JOIN ... IS NULL",
+    "question_zh": "Sunrise Speakers Club（club 1）有哪些有效會員從來沒有擔任過例會角色？",
     "expected": {
       "columns": [
         "member_id",
@@ -333,6 +347,8 @@ window.QUERIES = [
     "user": "VP Education",
     "question": "For each speaker, how many speeches have they given and what is their average length in seconds?",
     "sql": "SELECT m.display_name,\n       COUNT(*) AS speeches,\n       ROUND(AVG(sp.duration_sec), 1) AS avg_sec\nFROM speeches sp\nJOIN members m ON m.member_id = sp.member_id\nGROUP BY m.member_id, m.display_name\nORDER BY speeches DESC, m.display_name;",
+    "concept_zh": "GROUP BY、AVG、ROUND",
+    "question_zh": "每位講者講過幾場演講？平均長度是幾秒？",
     "expected": {
       "columns": [
         "display_name",
@@ -570,6 +586,8 @@ window.QUERIES = [
     "user": "VP Education",
     "question": "Which speakers gave more speeches than the average speaker?",
     "sql": "SELECT m.display_name, COUNT(*) AS speeches\nFROM speeches sp\nJOIN members m ON m.member_id = sp.member_id\nGROUP BY m.member_id, m.display_name\nHAVING COUNT(*) > (\n    SELECT COUNT(*) * 1.0 / COUNT(DISTINCT member_id)\n    FROM speeches\n)\nORDER BY speeches DESC, m.display_name;",
+    "concept_zh": "HAVING 裡的子查詢",
+    "question_zh": "哪些講者的演講次數高於全體講者的平均？",
     "expected": {
       "columns": [
         "display_name",
@@ -654,6 +672,8 @@ window.QUERIES = [
     "user": "Timer",
     "question": "Label every October speech as Under time, Qualified, Over time or Not recorded.",
     "sql": "SELECT mt.meeting_date, m.display_name, sp.duration_sec,\n       sp.min_sec, sp.max_sec,\n       CASE\n           WHEN sp.duration_sec IS NULL       THEN 'Not recorded'\n           WHEN sp.duration_sec < sp.min_sec  THEN 'Under time'\n           WHEN sp.duration_sec > sp.max_sec  THEN 'Over time'\n           ELSE 'Qualified'\n       END AS timing\nFROM speeches sp\nJOIN meetings mt ON mt.meeting_id = sp.meeting_id\nJOIN members m   ON m.member_id = sp.member_id\nWHERE mt.meeting_date BETWEEN '2026-10-01' AND '2026-10-31'\nORDER BY mt.meeting_date, sp.speech_id;",
+    "concept_zh": "CASE WHEN",
+    "question_zh": "把 10 月的每場演講標示為未達時間（Under time）、合格（Qualified）、超時（Over time）或未記錄（Not recorded）。",
     "expected": {
       "columns": [
         "meeting_date",
@@ -802,6 +822,8 @@ window.QUERIES = [
     "user": "VP Education",
     "question": "For each Pathways path, how many different members have given a speech on it, and how many speeches?",
     "sql": "SELECT p.path_name,\n       COUNT(DISTINCT sp.member_id) AS members_on_path,\n       COUNT(sp.speech_id) AS speeches\nFROM pathways p\nLEFT JOIN speeches sp ON sp.path_code = p.path_code\nGROUP BY p.path_code, p.path_name\nORDER BY members_on_path DESC, p.path_name;",
+    "concept_zh": "COUNT(DISTINCT)、LEFT JOIN",
+    "question_zh": "每條 Pathways 路徑各有幾位不同的會員講過？總共幾場演講？",
     "expected": {
       "columns": [
         "path_name",
@@ -849,6 +871,8 @@ window.QUERIES = [
     "user": "Area Director",
     "question": "For each area, how many clubs and how many active members are there?",
     "sql": "WITH club_stats AS (\n    SELECT c.area_id, c.club_id, COUNT(ms.membership_id) AS active_members\n    FROM clubs c\n    LEFT JOIN memberships ms\n           ON ms.club_id = c.club_id\n          AND ms.status = 'active'\n          AND ms.paid_through >= '2026-10-31'\n    GROUP BY c.area_id, c.club_id\n)\nSELECT a.area_name, a.division,\n       COUNT(cs.club_id) AS clubs,\n       SUM(cs.active_members) AS active_members\nFROM areas a\nJOIN club_stats cs ON cs.area_id = a.area_id\nGROUP BY a.area_id, a.area_name, a.division\nORDER BY a.area_id;",
+    "concept_zh": "WITH（CTE）",
+    "question_zh": "每個區域有幾個分會、幾位有效會員？",
     "expected": {
       "columns": [
         "area_name",
@@ -885,6 +909,8 @@ window.QUERIES = [
     "user": "VP Education",
     "question": "Within each club, rank speakers by number of speeches.",
     "sql": "WITH counts AS (\n    SELECT mt.club_id, sp.member_id, COUNT(*) AS speeches\n    FROM speeches sp\n    JOIN meetings mt ON mt.meeting_id = sp.meeting_id\n    GROUP BY mt.club_id, sp.member_id\n)\nSELECT c.club_name, m.display_name, ct.speeches,\n       RANK() OVER (PARTITION BY ct.club_id ORDER BY ct.speeches DESC) AS club_rank\nFROM counts ct\nJOIN clubs c   ON c.club_id = ct.club_id\nJOIN members m ON m.member_id = ct.member_id\nORDER BY c.club_name, club_rank, m.display_name;",
+    "concept_zh": "視窗函數 RANK() OVER (PARTITION BY)",
+    "question_zh": "在每個分會內，依演講次數替講者排名。",
     "expected": {
       "columns": [
         "club_name",
@@ -1173,6 +1199,8 @@ window.QUERIES = [
     "user": "VP Membership",
     "question": "Create a view of active memberships, then use it to find members who are active in more than one club.",
     "sql": "DROP VIEW IF EXISTS active_memberships;\n\nCREATE VIEW active_memberships AS\nSELECT member_id, club_id\nFROM memberships\nWHERE status = 'active'\n  AND paid_through >= '2026-10-31';\n\nSELECT m.display_name, c.club_name\nFROM members m\nJOIN active_memberships am ON am.member_id = m.member_id\nJOIN clubs c ON c.club_id = am.club_id\nWHERE EXISTS (\n    SELECT 1\n    FROM active_memberships x\n    WHERE x.member_id = m.member_id\n      AND x.club_id <> am.club_id\n)\nORDER BY m.display_name, c.club_name;",
+    "concept_zh": "CREATE VIEW、EXISTS",
+    "question_zh": "建立一個「有效會籍」的檢視表（view），再用它找出同時在兩個以上分會都是有效會員的人。",
     "expected": {
       "columns": [
         "display_name",

@@ -17,7 +17,7 @@
   --err-soft: #fdecea;
   --radius: 10px;
   --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
   color-scheme: light;
 }
 
@@ -198,9 +198,15 @@ details.expected summary { cursor: pointer; color: var(--muted); font-size: 0.92
 .site-footer { border-top: 1px solid var(--border); margin-top: 48px; padding: 24px 0 40px; color: var(--muted); font-size: 0.92rem; }
 
 @media (max-width: 760px) {
-  html { scroll-padding-top: 120px; }
+  html { scroll-padding-top: 16px; }
+  .site-header { position: static; }
+  .header-inner .btn { padding: 4px 12px; font-size: 0.88rem; }
   .cmp-grid { grid-template-columns: 1fr; }
   .header-inner { padding-top: 8px; padding-bottom: 8px; }
   .nav { order: 3; flex-basis: 100%; }
   #reset-db { margin-left: auto; }
 }
+
+/* language switch: show only the active language (html[data-ui] is set before paint) */
+html[data-ui="zh"] [data-lang="en"],
+html:not([data-ui="zh"]) [data-lang="zh"] { display: none !important; }

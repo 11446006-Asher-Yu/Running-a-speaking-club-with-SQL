@@ -320,6 +320,84 @@ ORDER BY ct.speeches DESC, m.display_name;""",
     },
 ]
 
+# Traditional Chinese text for the Chinese version of the page, keyed by id.
+QUERIES_ZH = {
+    "Q1": {"concept_zh": "SELECT、WHERE",
+           "question_zh": "列出 A1 區域的所有分會，以及所在城市和例會星期。"},
+    "Q2": {"concept_zh": "ORDER BY、LIMIT",
+           "question_zh": "資歷最久的 10 位會員是誰？（依首次加入日期，最早的排前面）"},
+    "Q3": {"concept_zh": "JOIN、GROUP BY、COUNT",
+           "question_zh": "每個分會目前有幾位有效會員？（有效會員：狀態為 'active'，且會費繳到 2026-10-31 或之後）"},
+    "Q4": {"concept_zh": "HAVING",
+           "question_zh": "哪些分會的有效會員少於 20 人，可能需要協助？"},
+    "Q5": {"concept_zh": "多條件 WHERE、日期比較",
+           "question_zh": "哪些會員還在分會裡，但還沒續繳會費？（會費只繳到 2026-10-31 之前）"},
+    "Q6": {"concept_zh": "多表 JOIN",
+           "question_zh": "列出第 1 場例會的完整角色表：日期、分會、角色和擔任者。"},
+    "Q7": {"concept_zh": "LEFT JOIN ... IS NULL",
+           "question_zh": "Sunrise Speakers Club（club 1）有哪些有效會員從來沒有擔任過例會角色？"},
+    "Q8": {"concept_zh": "GROUP BY、AVG、ROUND",
+           "question_zh": "每位講者講過幾場演講？平均長度是幾秒？"},
+    "Q9": {"concept_zh": "HAVING 裡的子查詢",
+           "question_zh": "哪些講者的演講次數高於全體講者的平均？"},
+    "Q10": {"concept_zh": "CASE WHEN",
+            "question_zh": "把 10 月的每場演講標示為未達時間（Under time）、合格（Qualified）、超時（Over time）或未記錄（Not recorded）。"},
+    "Q11": {"concept_zh": "COUNT(DISTINCT)、LEFT JOIN",
+            "question_zh": "每條 Pathways 路徑各有幾位不同的會員講過？總共幾場演講？"},
+    "Q12": {"concept_zh": "WITH（CTE）",
+            "question_zh": "每個區域有幾個分會、幾位有效會員？"},
+    "Q13": {"concept_zh": "視窗函數 RANK() OVER (PARTITION BY)",
+            "question_zh": "在每個分會內，依演講次數替講者排名。"},
+    "Q14": {"concept_zh": "CREATE VIEW、EXISTS",
+            "question_zh": "建立一個「有效會籍」的檢視表（view），再用它找出同時在兩個以上分會都是有效會員的人。"},
+}
+
+COMPARISONS_ZH = {
+    "C1": {
+        "topic_zh": "INNER JOIN 與 LEFT JOIN",
+        "question_zh": "Club 1 的每位有效會員各擔任過幾次角色？",
+        "change_zh": "把 INNER JOIN role_assignments 改成 LEFT JOIN role_assignments",
+        "why_zh": "INNER JOIN 只保留在 role_assignments 裡至少有一筆配對的會員，所以擔任 0 次的會員會消失。"
+                  "LEFT JOIN 會保留左邊的所有會員，配對不到的角色欄位填入 NULL。"
+                  "COUNT(ra.role_code) 不計算 NULL，所以這些會員顯示 0。"
+                  "如果改寫成 COUNT(*)，他們會錯誤地顯示 1，因為那一列雖然填滿 NULL，仍然算一列。",
+    },
+    "C2": {
+        "topic_zh": "WHERE 與 HAVING",
+        "question_zh": "哪些分會的有效會員少於 20 人？",
+        "change_zh": "把 COUNT() 條件從 HAVING 移到 WHERE",
+        "why_zh": "SQL 的處理順序是 FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY。"
+                  "WHERE 在分組之前逐列篩選，這時還沒有群組，所以不能用 COUNT() 這類彙總函數，資料庫會回傳錯誤。"
+                  "HAVING 在分組之後才篩選，這時 COUNT() 才有值。"
+                  "MySQL 也會出現類似的錯誤：「Invalid use of group function」。",
+    },
+    "C3": {
+        "topic_zh": "COUNT(*) 與 COUNT(欄位)、AVG 與 SUM/COUNT(*)",
+        "question_zh": "平均演講長度是多少？",
+        "change_zh": "把 AVG(duration_sec) 改成 SUM(duration_sec) * 1.0 / COUNT(*)",
+        "why_zh": "有些演講沒有記錄時間（NULL）。COUNT(*) 計算所有列，COUNT(duration_sec) 會略過 NULL。"
+                  "AVG 也會略過 NULL，所以分母是有記錄時間的演講數。"
+                  "用 SUM 除以 COUNT(*)，等於把沒記錄的演講當成 0 秒，平均值就會偏低。"
+                  "乘以 1.0 是為了避免 SQLite 做整數除法（MySQL 本來就會回傳小數）。",
+    },
+    "C4": {
+        "topic_zh": "= NULL 與 IS NULL",
+        "question_zh": "哪些演講不屬於任何 Pathways 路徑？",
+        "change_zh": "把 path_code = NULL 改成 path_code IS NULL",
+        "why_zh": "NULL 代表「未知」。任何值用 = 跟 NULL 比較，結果都是 UNKNOWN，不是 TRUE，"
+                  "所以 WHERE path_code = NULL 永遠找不到資料。"
+                  "要檢查缺值，必須用 IS NULL。SQLite 和 MySQL 都是這樣。",
+    },
+    "C5": {
+        "topic_zh": "RANK()、DENSE_RANK() 與 ROW_NUMBER()",
+        "question_zh": "依演講次數，替 Sunrise Speakers Club（club 1）的講者排名。",
+        "change_zh": "在 RANK() 旁邊加上 DENSE_RANK() 和 ROW_NUMBER()",
+        "why_zh": "講者同分時，RANK() 給相同名次並跳號（1, 1, 3）；DENSE_RANK() 給相同名次但不跳號（1, 1, 2）；"
+                  "ROW_NUMBER() 每一列一定給不同的號碼（1, 2, 3），"
+                  "所以在它的 ORDER BY 加上 display_name，讓同分的列順序固定。",
+    },
+}
+
 
 def run(db, sql):
     """Run a script; return the result of the last statement or the error."""
@@ -344,8 +422,10 @@ def fresh_db():
 
 def main():
     for q in QUERIES:
+        q.update(QUERIES_ZH[q["id"]])
         q["expected"] = run(fresh_db(), q["sql"])
     for c in COMPARISONS:
+        c.update(COMPARISONS_ZH[c["id"]])
         c["before_result"] = run(fresh_db(), c["before"])
         c["after_result"] = run(fresh_db(), c["after"])
 

@@ -9,6 +9,10 @@ window.COMPARISONS = [
     "after": "SELECT m.display_name, COUNT(ra.role_code) AS roles_taken\nFROM memberships ms\nJOIN members m ON m.member_id = ms.member_id\nLEFT JOIN role_assignments ra ON ra.member_id = m.member_id\nWHERE ms.club_id = 1 AND ms.status = 'active'\n  AND ms.paid_through >= '2026-10-31'\nGROUP BY m.member_id, m.display_name\nORDER BY roles_taken DESC, m.display_name;",
     "change": "INNER JOIN role_assignments → LEFT JOIN role_assignments",
     "why": "INNER JOIN only keeps members who have at least one matching row in role_assignments, so members with zero roles disappear. LEFT JOIN keeps every member from the left side and fills the role columns with NULL. COUNT(ra.role_code) ignores NULL, so those members show 0. If we wrote COUNT(*) instead, they would wrongly show 1, because the NULL-filled row is still a row.",
+    "topic_zh": "INNER JOIN 與 LEFT JOIN",
+    "question_zh": "Club 1 的每位有效會員各擔任過幾次角色？",
+    "change_zh": "把 INNER JOIN role_assignments 改成 LEFT JOIN role_assignments",
+    "why_zh": "INNER JOIN 只保留在 role_assignments 裡至少有一筆配對的會員，所以擔任 0 次的會員會消失。LEFT JOIN 會保留左邊的所有會員，配對不到的角色欄位填入 NULL。COUNT(ra.role_code) 不計算 NULL，所以這些會員顯示 0。如果改寫成 COUNT(*)，他們會錯誤地顯示 1，因為那一列雖然填滿 NULL，仍然算一列。",
     "before_result": {
       "columns": [
         "display_name",
@@ -159,6 +163,10 @@ window.COMPARISONS = [
     "after": "SELECT c.club_name, COUNT(ms.membership_id) AS active_members\nFROM clubs c\nJOIN memberships ms ON ms.club_id = c.club_id\nWHERE ms.status = 'active'\n  AND ms.paid_through >= '2026-10-31'\n  AND COUNT(ms.membership_id) < 20\nGROUP BY c.club_id, c.club_name\nORDER BY active_members, c.club_name;",
     "change": "Move the COUNT() condition from HAVING into WHERE",
     "why": "SQL is processed in the order FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY. WHERE filters single rows before groups exist, so an aggregate like COUNT() cannot be used there and the database returns an error. HAVING filters after grouping, which is where COUNT() has a value. MySQL gives a similar error: \"Invalid use of group function\".",
+    "topic_zh": "WHERE 與 HAVING",
+    "question_zh": "哪些分會的有效會員少於 20 人？",
+    "change_zh": "把 COUNT() 條件從 HAVING 移到 WHERE",
+    "why_zh": "SQL 的處理順序是 FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY。WHERE 在分組之前逐列篩選，這時還沒有群組，所以不能用 COUNT() 這類彙總函數，資料庫會回傳錯誤。HAVING 在分組之後才篩選，這時 COUNT() 才有值。MySQL 也會出現類似的錯誤：「Invalid use of group function」。",
     "before_result": {
       "columns": [
         "club_name",
@@ -196,6 +204,10 @@ window.COMPARISONS = [
     "after": "SELECT COUNT(*) AS all_speeches,\n       COUNT(duration_sec) AS timed_speeches,\n       ROUND(SUM(duration_sec) * 1.0 / COUNT(*), 1) AS avg_sec\nFROM speeches;",
     "change": "AVG(duration_sec) → SUM(duration_sec) * 1.0 / COUNT(*)",
     "why": "Some speeches have no recorded time (NULL). COUNT(*) counts every row, while COUNT(duration_sec) skips NULL. AVG also skips NULL, so it divides by the number of timed speeches. Dividing SUM by COUNT(*) treats untimed speeches as 0 seconds, so the average becomes too low. The * 1.0 avoids integer division in SQLite (MySQL already returns a decimal).",
+    "topic_zh": "COUNT(*) 與 COUNT(欄位)、AVG 與 SUM/COUNT(*)",
+    "question_zh": "平均演講長度是多少？",
+    "change_zh": "把 AVG(duration_sec) 改成 SUM(duration_sec) * 1.0 / COUNT(*)",
+    "why_zh": "有些演講沒有記錄時間（NULL）。COUNT(*) 計算所有列，COUNT(duration_sec) 會略過 NULL。AVG 也會略過 NULL，所以分母是有記錄時間的演講數。用 SUM 除以 COUNT(*)，等於把沒記錄的演講當成 0 秒，平均值就會偏低。乘以 1.0 是為了避免 SQLite 做整數除法（MySQL 本來就會回傳小數）。",
     "before_result": {
       "columns": [
         "all_speeches",
@@ -234,6 +246,10 @@ window.COMPARISONS = [
     "after": "SELECT speech_id, title\nFROM speeches\nWHERE path_code IS NULL\nORDER BY speech_id;",
     "change": "path_code = NULL → path_code IS NULL",
     "why": "NULL means \"unknown\". Comparing anything with NULL using = gives UNKNOWN, not TRUE, so WHERE path_code = NULL never matches a row and returns nothing. IS NULL is the operator that tests for missing values. Both SQLite and MySQL behave this way.",
+    "topic_zh": "= NULL 與 IS NULL",
+    "question_zh": "哪些演講不屬於任何 Pathways 路徑？",
+    "change_zh": "把 path_code = NULL 改成 path_code IS NULL",
+    "why_zh": "NULL 代表「未知」。任何值用 = 跟 NULL 比較，結果都是 UNKNOWN，不是 TRUE，所以 WHERE path_code = NULL 永遠找不到資料。要檢查缺值，必須用 IS NULL。SQLite 和 MySQL 都是這樣。",
     "before_result": {
       "columns": [
         "speech_id",
@@ -283,6 +299,10 @@ window.COMPARISONS = [
     "after": "WITH counts AS (\n    SELECT sp.member_id, COUNT(*) AS speeches\n    FROM speeches sp\n    JOIN meetings mt ON mt.meeting_id = sp.meeting_id\n    WHERE mt.club_id = 1\n    GROUP BY sp.member_id\n)\nSELECT m.display_name, ct.speeches,\n       RANK()       OVER (ORDER BY ct.speeches DESC) AS rnk,\n       DENSE_RANK() OVER (ORDER BY ct.speeches DESC) AS dense_rnk,\n       ROW_NUMBER() OVER (ORDER BY ct.speeches DESC, m.display_name) AS row_num\nFROM counts ct\nJOIN members m ON m.member_id = ct.member_id\nORDER BY ct.speeches DESC, m.display_name;",
     "change": "Add DENSE_RANK() and ROW_NUMBER() next to RANK()",
     "why": "When speakers tie, RANK() gives them the same number and then skips (1, 1, 3). DENSE_RANK() gives the same number without skipping (1, 1, 2). ROW_NUMBER() always gives a different number to each row (1, 2, 3), so we add display_name to its ORDER BY to make the order of tied rows predictable.",
+    "topic_zh": "RANK()、DENSE_RANK() 與 ROW_NUMBER()",
+    "question_zh": "依演講次數，替 Sunrise Speakers Club（club 1）的講者排名。",
+    "change_zh": "在 RANK() 旁邊加上 DENSE_RANK() 和 ROW_NUMBER()",
+    "why_zh": "講者同分時，RANK() 給相同名次並跳號（1, 1, 3）；DENSE_RANK() 給相同名次但不跳號（1, 1, 2）；ROW_NUMBER() 每一列一定給不同的號碼（1, 2, 3），所以在它的 ORDER BY 加上 display_name，讓同分的列順序固定。",
     "before_result": {
       "columns": [
         "display_name",
