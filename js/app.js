@@ -48,7 +48,7 @@
   }
 
   async function fetchText(path) {
-    const res = await fetch(path);
+    const res = await fetch(path, { cache: "no-cache" });  // always revalidate the SQL data files
     if (!res.ok) throw new Error(`Could not load ${path} (${res.status})`);
     return res.text();
   }

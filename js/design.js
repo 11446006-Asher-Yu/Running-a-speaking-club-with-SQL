@@ -72,12 +72,12 @@ window.TABLES = [
   },
   {
     name: "role_assignments",
-    about: "Who takes which role in which meeting.",
-    about_zh: "哪一場例會、哪個角色、由誰擔任。",
+    about: "Who takes which role in which meeting. A role may have several people (e.g. co-hosts), and a person may take several roles.",
+    about_zh: "哪一場例會、哪個角色、由誰擔任。一個角色可以有好幾個人（例如雙主持），一個人也可以兼任好幾個角色。",
     columns: [
       ["meeting_id", "INTEGER", "PK, FK → meetings", "Meeting", "例會"],
       ["role_code", "VARCHAR(5)", "PK, FK → roles", "Role", "角色"],
-      ["member_id", "INTEGER", "FK → members, NOT NULL", "Person taking the role", "擔任者"],
+      ["member_id", "INTEGER", "PK, FK → members", "Person taking the role", "擔任者"],
     ],
   },
   {

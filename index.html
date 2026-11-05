@@ -142,7 +142,7 @@ erDiagram
     role_assignments {
         INTEGER meeting_id PK,FK
         VARCHAR role_code PK,FK
-        INTEGER member_id FK
+        INTEGER member_id PK,FK
     }
     pathways {
         VARCHAR path_code PK
@@ -203,12 +203,12 @@ erDiagram
               <td><span data-lang="en">A member can belong to more than one club, so members and clubs are M:N. A relational table cannot store M:N directly, so it is split into two 1:N relationships. The dues date <code>paid_through</code> belongs to one membership, not to the person.</span><span data-lang="zh">一位會員可以同時屬於多個分會，所以會員和分會是 M:N。關聯式資料表無法直接存 M:N，所以拆成兩個 1:N。會費日期 <code>paid_through</code> 屬於「某人在某分會的會籍」，不是屬於這個人。</span></td>
             </tr>
             <tr>
-              <td><span data-lang="en"><code>role_assignments</code> key is (<code>meeting_id</code>, <code>role_code</code>)</span><span data-lang="zh"><code>role_assignments</code> 的主鍵是（<code>meeting_id</code>, <code>role_code</code>）</span></td>
-              <td><span data-lang="en">Each role in a meeting can be taken by only one person. The composite primary key lets the database block double bookings.</span><span data-lang="zh">同一場例會的同一個角色只能由一個人擔任。用複合主鍵，讓資料庫自動擋掉重複安排。</span></td>
+              <td><span data-lang="en"><code>role_assignments</code> key is (<code>meeting_id</code>, <code>role_code</code>, <code>member_id</code>)</span><span data-lang="zh"><code>role_assignments</code> 的主鍵是（<code>meeting_id</code>, <code>role_code</code>, <code>member_id</code>）</span></td>
+              <td><span data-lang="en">At special events one role can have two people (e.g. co-hosts), and in small clubs one person often takes two roles, so neither (<code>meeting_id</code>, <code>role_code</code>) nor (<code>meeting_id</code>, <code>member_id</code>) is a key. The three columns together only block recording the same person in the same role twice. Trade-off: the database no longer stops two timers being booked by mistake; whoever schedules the meeting has to check that.</span><span data-lang="zh">特殊活動時一個角色可能有兩個人（例如雙主持），小分會也常有一人兼任兩個角色，所以（<code>meeting_id</code>, <code>role_code</code>）和（<code>meeting_id</code>, <code>member_id</code>）都不能當鍵。三個欄位一起當主鍵，只擋掉「同一人在同一場例會重複登記同一個角色」。代價是：資料庫不會再擋下誤排兩位計時員的情況，要由排角色的人自己檢查。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en">Speech evaluators are stored in <code>speeches.evaluator_id</code></span><span data-lang="zh">個別講評員記在 <code>speeches.evaluator_id</code></span></td>
-              <td><span data-lang="en">A meeting has several evaluators. As a role, the composite key would reject the second one. Each evaluator is tied to exactly one speech, so the column belongs on the speech.</span><span data-lang="zh">一場例會有好幾位講評員。如果把講評員當成角色，複合主鍵會擋掉第二位。每場演講最多只有一位講評員，所以這個欄位放在演講上。</span></td>
+              <td><span data-lang="en">Each evaluator evaluates one specific speech. <code>role_assignments</code> only says who took a role in which meeting, not which speech they evaluated, so the evaluator is stored on the speech itself (each speech has at most one).</span><span data-lang="zh">每位講評員講評的是某一場特定的演講。<code>role_assignments</code> 只記錄「誰在哪場例會擔任什麼角色」，記不了「講評哪一場演講」，所以講評員直接記在演講上（每場演講最多一位）。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en"><code>status</code> and <code>paid_through</code> are separate</span><span data-lang="zh"><code>status</code> 和 <code>paid_through</code> 分開</span></td>
@@ -314,9 +314,9 @@ erDiagram
 
   <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-  <script src="js/design.js?v=2"></script>
-  <script src="js/queries.js?v=2"></script>
-  <script src="js/compare.js?v=2"></script>
-  <script src="js/app.js?v=2"></script>
+  <script src="js/design.js?v=3"></script>
+  <script src="js/queries.js?v=3"></script>
+  <script src="js/compare.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>

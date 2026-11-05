@@ -25,7 +25,9 @@ def load_js(name):
 
 
 def statements(sql):
-    return [s.strip() for s in sql.split(";") if s.strip()]
+    # drop "--" comment lines first, so a ";" inside a comment cannot split a statement
+    lines = [line for line in sql.splitlines() if not line.lstrip().startswith("--")]
+    return [s.strip() for s in "\n".join(lines).split(";") if s.strip()]
 
 
 def normalize(value):

@@ -67,12 +67,13 @@ CREATE TABLE roles (
     CHECK (category IN ('leading', 'supporting'))
 );
 
--- One person per role per meeting: enforced by the composite primary key.
+-- A role may have more than one person (e.g. co-hosts at a special event) and a
+-- person may take more than one role. Only an exact duplicate entry is blocked.
 CREATE TABLE role_assignments (
     meeting_id      INTEGER      NOT NULL,
     role_code       VARCHAR(5)   NOT NULL,
     member_id       INTEGER      NOT NULL,
-    PRIMARY KEY (meeting_id, role_code),
+    PRIMARY KEY (meeting_id, role_code, member_id),
     FOREIGN KEY (meeting_id) REFERENCES meetings (meeting_id),
     FOREIGN KEY (role_code)  REFERENCES roles (role_code),
     FOREIGN KEY (member_id)  REFERENCES members (member_id)
