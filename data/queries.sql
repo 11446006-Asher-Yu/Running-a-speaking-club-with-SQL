@@ -41,13 +41,15 @@ WHERE ms.status = 'active'
   AND ms.paid_through < '2026-10-31'
 ORDER BY c.club_name, m.display_name;
 
--- Q6: Show the full role sheet of meeting #1: date, club, role and who takes it.
-SELECT mt.meeting_date, c.club_name, r.role_name, m.display_name
+-- Q6: Show the full role sheet of meeting #1: date, club, standard role name, the name this club uses, and who takes it.
+SELECT mt.meeting_date, c.club_name, r.role_name, cr.local_name, m.display_name
 FROM role_assignments ra
-JOIN meetings mt ON mt.meeting_id = ra.meeting_id
-JOIN clubs c     ON c.club_id = mt.club_id
-JOIN roles r     ON r.role_code = ra.role_code
-JOIN members m   ON m.member_id = ra.member_id
+JOIN meetings mt  ON mt.meeting_id = ra.meeting_id
+JOIN clubs c      ON c.club_id = mt.club_id
+JOIN roles r      ON r.role_code = ra.role_code
+JOIN club_roles cr ON cr.club_id = mt.club_id
+                  AND cr.role_code = ra.role_code
+JOIN members m    ON m.member_id = ra.member_id
 WHERE ra.meeting_id = 1
 ORDER BY r.category, r.role_name;
 

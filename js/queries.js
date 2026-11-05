@@ -241,17 +241,18 @@ window.QUERIES = [
   {
     "id": "Q6",
     "level": "Intermediate",
-    "concept": "Multi-table JOIN",
+    "concept": "Multi-table JOIN, two-column join condition",
     "user": "VP Education",
-    "question": "Show the full role sheet of meeting #1: date, club, role and who takes it.",
-    "sql": "SELECT mt.meeting_date, c.club_name, r.role_name, m.display_name\nFROM role_assignments ra\nJOIN meetings mt ON mt.meeting_id = ra.meeting_id\nJOIN clubs c     ON c.club_id = mt.club_id\nJOIN roles r     ON r.role_code = ra.role_code\nJOIN members m   ON m.member_id = ra.member_id\nWHERE ra.meeting_id = 1\nORDER BY r.category, r.role_name;",
-    "concept_zh": "多表 JOIN",
-    "question_zh": "列出第 1 場例會的完整角色表：日期、分會、角色和擔任者。",
+    "question": "Show the full role sheet of meeting #1: date, club, standard role name, the name this club uses, and who takes it.",
+    "sql": "SELECT mt.meeting_date, c.club_name, r.role_name, cr.local_name, m.display_name\nFROM role_assignments ra\nJOIN meetings mt  ON mt.meeting_id = ra.meeting_id\nJOIN clubs c      ON c.club_id = mt.club_id\nJOIN roles r      ON r.role_code = ra.role_code\nJOIN club_roles cr ON cr.club_id = mt.club_id\n                  AND cr.role_code = ra.role_code\nJOIN members m    ON m.member_id = ra.member_id\nWHERE ra.meeting_id = 1\nORDER BY r.category, r.role_name;",
+    "concept_zh": "多表 JOIN、兩個欄位的連接條件",
+    "question_zh": "列出第 1 場例會的完整角色表：日期、分會、標準角色名稱、這個分會使用的角色名稱，以及擔任者。",
     "expected": {
       "columns": [
         "meeting_date",
         "club_name",
         "role_name",
+        "local_name",
         "display_name"
       ],
       "rows": [
@@ -259,11 +260,13 @@ window.QUERIES = [
           "2026-08-04",
           "Sunrise Speakers Club",
           "General Evaluator",
+          "General Evaluator",
           "Queenie Hsieh"
         ],
         [
           "2026-08-04",
           "Sunrise Speakers Club",
+          "Table Topics Master",
           "Table Topics Master",
           "David Yeh"
         ],
@@ -271,23 +274,27 @@ window.QUERIES = [
           "2026-08-04",
           "Sunrise Speakers Club",
           "Toastmaster of the Evening",
+          "Toastmaster of the Day",
           "Gina Chang"
         ],
         [
           "2026-08-04",
           "Sunrise Speakers Club",
           "Ah-Counter",
+          "Filler Word Counter",
           "Yvonne Kuo"
         ],
         [
           "2026-08-04",
           "Sunrise Speakers Club",
           "Grammarian",
+          "Grammarian",
           "Amy Chiu"
         ],
         [
           "2026-08-04",
           "Sunrise Speakers Club",
+          "Timer",
           "Timer",
           "Peter Yeh"
         ]

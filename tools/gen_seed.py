@@ -38,6 +38,26 @@ ROLES = [
     ("AHC", "Ah-Counter",                 "supporting"),
 ]
 
+# Roles some clubs have in addition to the core six. They are listed in the shared
+# roles table and offered through club_roles, but have no assignments in the sample.
+EXTRA_ROLES = [
+    ("VSM", "Variety Session Master",          "leading"),
+    ("BW",  "Board Writer",                    "supporting"),
+    ("PHO", "Photographer",                    "supporting"),
+    ("LHE", "Language and Humor Evaluator",    "supporting"),
+]
+
+# Roles each club offers, and the name the club uses when it differs from the standard one.
+# Every club offers the core six, because every sample meeting uses them.
+CLUB_ROLE_NAMES = {
+    1: {"TME": "Toastmaster of the Day", "AHC": "Filler Word Counter", "PHO": None},
+    2: {"VSM": None, "BW": None},
+    3: {"TTM": "Group Table Topics Master", "GRM": "Language Evaluator", "LHE": None},
+    4: {},
+    5: {"PHO": None, "BW": "Whiteboard Recorder"},
+    6: {"TME": "Meeting Host", "VSM": "Warm-up Host", "LHE": None, "PHO": None},
+}
+
 PATHWAYS = [
     ("PM", "Presentation Mastery"),
     ("DL", "Dynamic Leadership"),
@@ -191,6 +211,15 @@ for mt_id, club_id, mt_date, _ in meetings:
                          duration, min_sec, max_sec))
         speech_id += 1
 
+# ---- club roles (no randomness, so the data above is unchanged) ----------
+standard_name = {code: name for code, name, _ in ROLES + EXTRA_ROLES}
+club_roles = []
+for club in CLUBS:
+    names = CLUB_ROLE_NAMES[club[0]]
+    codes = [code for code, _, _ in ROLES] + [c for c in names if c not in {r[0] for r in ROLES}]
+    for code in codes:
+        club_roles.append((club[0], code, names.get(code) or standard_name[code]))
+
 # ---- write ---------------------------------------------------------------
 parts = [
     "-- Fictional sample data for the Toastmasters Club Operations DB.\n"
@@ -203,7 +232,8 @@ parts = [
     insert("memberships", ["membership_id", "member_id", "club_id", "start_date", "paid_through", "status"],
            memberships),
     insert("meetings", ["meeting_id", "club_id", "meeting_date", "theme"], meetings),
-    insert("roles", ["role_code", "role_name", "category"], ROLES),
+    insert("roles", ["role_code", "role_name", "category"], ROLES + EXTRA_ROLES),
+    insert("club_roles", ["club_id", "role_code", "local_name"], club_roles),
     insert("role_assignments", ["meeting_id", "role_code", "member_id"], assignments),
     insert("pathways", ["path_code", "path_name"], PATHWAYS),
     insert("speeches", ["speech_id", "meeting_id", "member_id", "evaluator_id", "path_code",
@@ -211,4 +241,4 @@ parts = [
 ]
 OUT.write_text("\n".join(parts), encoding="utf-8", newline="\n")
 print(f"members={len(members)} memberships={len(memberships)} meetings={len(meetings)} "
-      f"role_assignments={len(assignments)} speeches={len(speeches)}")
+      f"role_assignments={len(assignments)} speeches={len(speeches)} club_roles={len(club_roles)}")

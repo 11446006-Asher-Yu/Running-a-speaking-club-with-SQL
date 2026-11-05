@@ -6,6 +6,7 @@
 
 DROP TABLE IF EXISTS speeches;
 DROP TABLE IF EXISTS role_assignments;
+DROP TABLE IF EXISTS club_roles;
 DROP TABLE IF EXISTS meetings;
 DROP TABLE IF EXISTS memberships;
 DROP TABLE IF EXISTS pathways;
@@ -60,11 +61,24 @@ CREATE TABLE meetings (
     FOREIGN KEY (club_id) REFERENCES clubs (club_id)
 );
 
+-- Standard list of meeting roles, shared by all clubs.
 CREATE TABLE roles (
     role_code       VARCHAR(5)   PRIMARY KEY,
     role_name       VARCHAR(40)  NOT NULL,
     category        VARCHAR(10)  NOT NULL,
     CHECK (category IN ('leading', 'supporting'))
+);
+
+-- M:N between clubs and roles: which roles a club has, and the name the club uses.
+-- Not enforced: that a meeting only uses roles its club offers (role_assignments has
+-- no club_id, and copying it there would store the meeting's club twice).
+CREATE TABLE club_roles (
+    club_id         INTEGER      NOT NULL,
+    role_code       VARCHAR(5)   NOT NULL,
+    local_name      VARCHAR(60)  NOT NULL,
+    PRIMARY KEY (club_id, role_code),
+    FOREIGN KEY (club_id)   REFERENCES clubs (club_id),
+    FOREIGN KEY (role_code) REFERENCES roles (role_code)
 );
 
 -- A role may have more than one person (e.g. co-hosts at a special event) and a

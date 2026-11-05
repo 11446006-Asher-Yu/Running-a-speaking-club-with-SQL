@@ -98,6 +98,8 @@ erDiagram
     meetings ||--o{ role_assignments : "schedules"
     members ||--o{ role_assignments : "takes"
     roles ||--o{ role_assignments : "type of"
+    clubs ||--o{ club_roles : "offers"
+    roles ||--o{ club_roles : "named in"
     meetings ||--o{ speeches : "includes"
     members ||--o{ speeches : "delivers"
     members |o--o{ speeches : "evaluates"
@@ -139,6 +141,11 @@ erDiagram
         VARCHAR role_name
         VARCHAR category
     }
+    club_roles {
+        INTEGER club_id PK,FK
+        VARCHAR role_code PK,FK
+        VARCHAR local_name
+    }
     role_assignments {
         INTEGER meeting_id PK,FK
         VARCHAR role_code PK,FK
@@ -178,6 +185,7 @@ erDiagram
           <tbody>
             <tr><td><code>areas</code> <span data-lang="en">contain</span><span data-lang="zh">包含</span> <code>clubs</code></td><td>1:N</td><td><span data-lang="en">Partial (an area may have no clubs)</span><span data-lang="zh">部分參與（區域可以沒有分會）</span></td><td><span data-lang="en">Total (every club is in an area)</span><span data-lang="zh">全參與（每個分會都屬於某個區域）</span></td><td><code>clubs.area_id</code> NOT NULL</td></tr>
             <tr><td><code>members</code> <span data-lang="en">join</span><span data-lang="zh">加入</span> <code>clubs</code></td><td><strong>M:N</strong></td><td colspan="2"><span data-lang="en">Partial on both sides. Stored as two 1:N relationships through <code>memberships</code></span><span data-lang="zh">兩邊都是部分參與。透過 <code>memberships</code> 拆成兩個 1:N 存放</span></td><td><code>memberships.member_id</code>, <code>memberships.club_id</code> NOT NULL</td></tr>
+            <tr><td><code>clubs</code> <span data-lang="en">offer</span><span data-lang="zh">提供</span> <code>roles</code></td><td><strong>M:N</strong></td><td colspan="2"><span data-lang="en">Partial on both sides. Stored as two 1:N relationships through <code>club_roles</code>, which also keeps the name each club uses</span><span data-lang="zh">兩邊都是部分參與。透過 <code>club_roles</code> 拆成兩個 1:N 存放，同時記錄每個分會使用的角色名稱</span></td><td><code>club_roles.club_id</code>, <code>club_roles.role_code</code> NOT NULL</td></tr>
             <tr><td><code>clubs</code> <span data-lang="en">hold</span><span data-lang="zh">舉辦</span> <code>meetings</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total (every meeting belongs to a club)</span><span data-lang="zh">全參與（每場例會都屬於某個分會）</span></td><td><code>meetings.club_id</code> NOT NULL</td></tr>
             <tr><td><code>meetings</code> <span data-lang="en">schedule</span><span data-lang="zh">安排</span> <code>role_assignments</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total</span><span data-lang="zh">全參與</span></td><td><code>role_assignments.meeting_id</code> NOT NULL</td></tr>
             <tr><td><code>roles</code> <span data-lang="en">are used in</span><span data-lang="zh">用於</span> <code>role_assignments</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total</span><span data-lang="zh">全參與</span></td><td><code>role_assignments.role_code</code> NOT NULL</td></tr>
@@ -205,6 +213,10 @@ erDiagram
             <tr>
               <td><span data-lang="en"><code>role_assignments</code> key is (<code>meeting_id</code>, <code>role_code</code>, <code>member_id</code>)</span><span data-lang="zh"><code>role_assignments</code> 的主鍵是（<code>meeting_id</code>, <code>role_code</code>, <code>member_id</code>）</span></td>
               <td><span data-lang="en">At special events one role can have two people (e.g. co-hosts), and in small clubs one person often takes two roles, so neither (<code>meeting_id</code>, <code>role_code</code>) nor (<code>meeting_id</code>, <code>member_id</code>) is a key. The three columns together only block recording the same person in the same role twice. Trade-off: the database no longer stops two timers being booked by mistake; whoever schedules the meeting has to check that.</span><span data-lang="zh">特殊活動時一個角色可能有兩個人（例如雙主持），小分會也常有一人兼任兩個角色，所以（<code>meeting_id</code>, <code>role_code</code>）和（<code>meeting_id</code>, <code>member_id</code>）都不能當鍵。三個欄位一起當主鍵，只擋掉「同一人在同一場例會重複登記同一個角色」。代價是：資料庫不會再擋下誤排兩位計時員的情況，要由排角色的人自己檢查。</span></td>
+            </tr>
+            <tr>
+              <td><span data-lang="en"><code>club_roles</code>: each club’s own role list</span><span data-lang="zh"><code>club_roles</code>：每個分會自己的角色清單</span></td>
+              <td><span data-lang="en">Clubs offer different roles (e.g. only some have a photographer) and use different names for the same role (e.g. “Toastmaster of the Day”). <code>roles</code> keeps one standard list; <code>club_roles</code> records which roles a club offers and the name it uses. Trade-off: the database does not check that a meeting only uses roles its club offers, because <code>role_assignments</code> has no <code>club_id</code>, and adding one would store the meeting’s club a second time.</span><span data-lang="zh">各分會的角色不一樣（例如只有部分分會有攝影師），同一個角色的名稱也可能不同（例如「Toastmaster of the Day」）。<code>roles</code> 保留一份標準清單；<code>club_roles</code> 記錄每個分會有哪些角色、在該分會叫什麼名字。代價：資料庫不會檢查例會只使用該分會有的角色，因為 <code>role_assignments</code> 沒有 <code>club_id</code>；如果加上去，就等於把例會所屬的分會再存一次。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en">Speech evaluators are stored in <code>speeches.evaluator_id</code></span><span data-lang="zh">個別講評員記在 <code>speeches.evaluator_id</code></span></td>
@@ -314,8 +326,8 @@ erDiagram
 
   <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-  <script src="js/design.js?v=3"></script>
-  <script src="js/queries.js?v=3"></script>
+  <script src="js/design.js?v=4"></script>
+  <script src="js/queries.js?v=4"></script>
   <script src="js/compare.js?v=3"></script>
   <script src="js/app.js?v=4"></script>
 </body>

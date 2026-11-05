@@ -62,12 +62,22 @@ window.TABLES = [
   },
   {
     name: "roles",
-    about: "Lookup table of meeting roles.",
-    about_zh: "例會角色的代碼表。",
+    about: "Standard list of meeting roles, shared by all clubs. Which roles a club offers, and what it calls them, is in club_roles.",
+    about_zh: "所有分會共用的標準角色清單。各分會有哪些角色、叫什麼名字，記在 club_roles。",
     columns: [
       ["role_code", "VARCHAR(5)", "PK", "Short code, e.g. TME", "角色代碼，例如 TME（總主持人）"],
       ["role_name", "VARCHAR(40)", "NOT NULL", "Full role name", "角色完整名稱"],
       ["category", "VARCHAR(10)", "NOT NULL, CHECK in ('leading','supporting')", "Leading or supporting role", "主導角色（leading）或輔助角色（supporting）"],
+    ],
+  },
+  {
+    name: "club_roles",
+    about: "Which roles each club offers (M:N between clubs and roles), and the name the club uses for each.",
+    about_zh: "每個分會有哪些角色（分會與角色的 M:N），以及該分會對每個角色的稱呼。",
+    columns: [
+      ["club_id", "INTEGER", "PK, FK → clubs", "Club", "分會"],
+      ["role_code", "VARCHAR(5)", "PK, FK → roles", "Role", "角色"],
+      ["local_name", "VARCHAR(60)", "NOT NULL", "Name this club uses for the role", "這個分會對該角色的稱呼"],
     ],
   },
   {
