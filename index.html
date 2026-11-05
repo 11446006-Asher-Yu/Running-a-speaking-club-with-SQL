@@ -138,12 +138,32 @@ erDiagram
         </pre>
       </div>
 
+      <h3 class="sub">Relationships</h3>
+      <p class="hint">Cardinality ratio is 1:1, 1:N or M:N. Participation: <strong>total</strong> (double line, every row must take part, enforced by a <code>NOT NULL</code> foreign key) or <strong>partial</strong> (single line, may have none). In the diagram, <code>||</code> means exactly one, <code>|o</code> zero or one, <code>o{</code> zero or more. There is no 1:1 relationship in this design.</p>
+      <div class="table-scroll">
+        <table class="doc-table">
+          <thead><tr><th>Relationship</th><th>Ratio</th><th>“1” side participation</th><th>“N” side participation</th><th>Foreign key</th></tr></thead>
+          <tbody>
+            <tr><td><code>areas</code> contain <code>clubs</code></td><td>1:N</td><td>Partial (an area may have no clubs)</td><td>Total (every club is in an area)</td><td><code>clubs.area_id</code> NOT NULL</td></tr>
+            <tr><td><code>members</code> join <code>clubs</code></td><td><strong>M:N</strong></td><td colspan="2">Partial on both sides. Stored as two 1:N relationships through <code>memberships</code></td><td><code>memberships.member_id</code>, <code>memberships.club_id</code> NOT NULL</td></tr>
+            <tr><td><code>clubs</code> hold <code>meetings</code></td><td>1:N</td><td>Partial</td><td>Total (every meeting belongs to a club)</td><td><code>meetings.club_id</code> NOT NULL</td></tr>
+            <tr><td><code>meetings</code> schedule <code>role_assignments</code></td><td>1:N</td><td>Partial</td><td>Total</td><td><code>role_assignments.meeting_id</code> NOT NULL</td></tr>
+            <tr><td><code>roles</code> are used in <code>role_assignments</code></td><td>1:N</td><td>Partial</td><td>Total</td><td><code>role_assignments.role_code</code> NOT NULL</td></tr>
+            <tr><td><code>members</code> take <code>role_assignments</code></td><td>1:N</td><td>Partial (a member may never take a role, see Q7)</td><td>Total</td><td><code>role_assignments.member_id</code> NOT NULL</td></tr>
+            <tr><td><code>meetings</code> include <code>speeches</code></td><td>1:N</td><td>Partial</td><td>Total</td><td><code>speeches.meeting_id</code> NOT NULL</td></tr>
+            <tr><td><code>members</code> deliver <code>speeches</code></td><td>1:N</td><td>Partial</td><td>Total (every speech has a speaker)</td><td><code>speeches.member_id</code> NOT NULL</td></tr>
+            <tr><td><code>members</code> evaluate <code>speeches</code></td><td>1:N</td><td>Partial</td><td><strong>Partial</strong> (evaluator may be missing)</td><td><code>speeches.evaluator_id</code> allows NULL</td></tr>
+            <tr><td><code>pathways</code> contain <code>speeches</code></td><td>1:N</td><td>Partial</td><td><strong>Partial</strong> (non-Pathways speeches, see C4)</td><td><code>speeches.path_code</code> allows NULL</td></tr>
+          </tbody>
+        </table>
+      </div>
+
       <h3 class="sub">Key design decisions</h3>
       <div class="table-scroll">
         <table class="doc-table">
           <thead><tr><th>Decision</th><th>Reason</th></tr></thead>
           <tbody>
-            <tr><td><code>memberships</code> is its own table</td><td>A member can belong to more than one club, so members and clubs are many-to-many. The dues date <code>paid_through</code> belongs to one membership, not to the person.</td></tr>
+            <tr><td><code>memberships</code> is its own table</td><td>A member can belong to more than one club, so members and clubs are M:N. A relational table cannot store M:N directly, so it is split into two 1:N relationships. The dues date <code>paid_through</code> belongs to one membership, not to the person.</td></tr>
             <tr><td><code>role_assignments</code> key is (<code>meeting_id</code>, <code>role_code</code>)</td><td>Each role in a meeting can be taken by only one person. The composite primary key lets the database block double bookings.</td></tr>
             <tr><td>Speech evaluators are stored in <code>speeches.evaluator_id</code></td><td>A meeting has several evaluators. As a role, the composite key would reject the second one. Each evaluator is tied to exactly one speech, so the column belongs on the speech.</td></tr>
             <tr><td><code>status</code> and <code>paid_through</code> are separate</td><td><code>status</code> says whether the person is still in the club; <code>paid_through</code> says how far dues are paid. “Still in the club but not renewed” is the combination of both.</td></tr>
