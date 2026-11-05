@@ -100,8 +100,8 @@ kbd { border: 1px solid var(--border); }
 .hero { padding-top: 48px; padding-bottom: 16px; }
 .eyebrow { color: var(--accent); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; margin: 0; }
 h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.2; margin: 8px 0 12px; }
-.lead { font-size: 1.1rem; color: var(--muted); max-width: 720px; }
-.notice { background: var(--warn-soft); color: var(--text); border-left: 4px solid var(--warn); padding: 10px 14px; border-radius: 6px; max-width: 720px; }
+.lead { font-size: 1.1rem; color: var(--muted); }
+.notice { background: var(--warn-soft); color: var(--text); border-left: 4px solid var(--warn); padding: 10px 14px; border-radius: 6px; }
 
 .status { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 0.9rem; }
 .status-loading { background: var(--surface-2); color: var(--muted); }
