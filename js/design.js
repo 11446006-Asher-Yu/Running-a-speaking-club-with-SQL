@@ -106,7 +106,7 @@ window.TABLES = [
     columns: [
       ["speech_id", "INTEGER", "PK", "Speech number", "演講編號"],
       ["meeting_id", "INTEGER", "FK → meetings, NOT NULL", "Meeting where it was given", "在哪場例會發表"],
-      ["member_id", "INTEGER", "FK → members, NOT NULL", "Speaker", "講者"],
+      ["member_id", "INTEGER", "FK → members", "Speaker; NULL until one is found", "講者；還沒找到時為 NULL"],
       ["evaluator_id", "INTEGER", "FK → members", "Evaluator of this speech; NULL until one is found", "這場演講的講評員；還沒找到時為 NULL"],
       ["path_code", "VARCHAR(5)", "FK → pathways; NULL together with path_level", "NULL for non-Pathways speeches (e.g. contest practice)", "不屬於 Pathways 的演講（例如比賽練習）為 NULL"],
       ["path_level", "INTEGER", "CHECK 1–5; NULL together with path_code", "Level on the path", "路徑階段；沒有路徑時為 NULL"],

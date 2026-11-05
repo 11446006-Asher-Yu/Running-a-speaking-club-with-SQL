@@ -101,7 +101,7 @@ erDiagram
     clubs ||--o{ club_roles : "offers"
     roles ||--o{ club_roles : "named in"
     meetings ||--o{ speeches : "includes"
-    members ||--o{ speeches : "delivers"
+    members |o--o{ speeches : "delivers"
     members |o--o{ speeches : "evaluates"
     pathways |o--o{ speeches : "belongs to"
     areas {
@@ -191,7 +191,7 @@ erDiagram
             <tr><td><code>roles</code> <span data-lang="en">are used in</span><span data-lang="zh">用於</span> <code>role_assignments</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total</span><span data-lang="zh">全參與</span></td><td><code>role_assignments.role_code</code> NOT NULL</td></tr>
             <tr><td><code>members</code> <span data-lang="en">take</span><span data-lang="zh">擔任</span> <code>role_assignments</code></td><td>1:N</td><td><span data-lang="en">Partial (a member may never take a role, see Q7)</span><span data-lang="zh">部分參與（會員可以從沒擔任過角色，見 Q7）</span></td><td><span data-lang="en">Total</span><span data-lang="zh">全參與</span></td><td><code>role_assignments.member_id</code> NOT NULL</td></tr>
             <tr><td><code>meetings</code> <span data-lang="en">include</span><span data-lang="zh">包含</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total</span><span data-lang="zh">全參與</span></td><td><code>speeches.meeting_id</code> NOT NULL</td></tr>
-            <tr><td><code>members</code> <span data-lang="en">deliver</span><span data-lang="zh">發表</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total (every speech has a speaker)</span><span data-lang="zh">全參與（每場演講都有講者）</span></td><td><code>speeches.member_id</code> NOT NULL</td></tr>
+            <tr><td><code>members</code> <span data-lang="en">deliver</span><span data-lang="zh">發表</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><strong><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></strong> <span data-lang="en">(no speaker yet while planning)</span><span data-lang="zh">（排議程時可能還沒找到講者）</span></td><td><code>speeches.member_id</code> <span data-lang="en">allows NULL</span><span data-lang="zh">允許 NULL</span></td></tr>
             <tr><td><code>members</code> <span data-lang="en">evaluate</span><span data-lang="zh">講評</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><strong><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></strong> <span data-lang="en">(no evaluator yet while planning)</span><span data-lang="zh">（排議程時可能還沒找到講評員）</span></td><td><code>speeches.evaluator_id</code> <span data-lang="en">allows NULL</span><span data-lang="zh">允許 NULL</span></td></tr>
             <tr><td><code>pathways</code> <span data-lang="en">contain</span><span data-lang="zh">包含</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><strong><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></strong> <span data-lang="en">(non-Pathways speeches, see C4)</span><span data-lang="zh">（不屬於 Pathways 的演講，見 C4）</span></td><td><code>speeches.path_code</code> <span data-lang="en">allows NULL</span><span data-lang="zh">允許 NULL</span></td></tr>
           </tbody>
@@ -220,7 +220,7 @@ erDiagram
             </tr>
             <tr>
               <td><span data-lang="en">Speech evaluators are stored in <code>speeches.evaluator_id</code></span><span data-lang="zh">個別講評員記在 <code>speeches.evaluator_id</code></span></td>
-              <td><span data-lang="en">Each evaluator evaluates one specific speech. <code>role_assignments</code> only says who took a role in which meeting, not which speech they evaluated, so the evaluator is stored on the speech itself. Speeches are entered while the agenda is being planned, often before an evaluator is found, so it allows NULL, meaning “not known yet”. Every speech ends up with one evaluator; the sample meetings are all in the past, so none of them is NULL.</span><span data-lang="zh">每位講評員講評的是某一場特定的演講。<code>role_assignments</code> 只記錄「誰在哪場例會擔任什麼角色」，記不了「講評哪一場演講」，所以講評員直接記在演講上。演講資料在排議程時就會建立，那時常常還沒找到講評員，所以允許 NULL，代表「還不知道」。每場演講最後都會有一位講評員；樣本資料的例會都已經結束，所以沒有 NULL。</span></td>
+              <td><span data-lang="en">Each evaluator evaluates one specific speech. <code>role_assignments</code> only says who took a role in which meeting, not which speech they evaluated, so the evaluator is stored on the speech itself. Speeches are entered while the agenda is being planned, often before the speaker or the evaluator is found, so both <code>member_id</code> (speaker) and <code>evaluator_id</code> allow NULL, meaning “not known yet”. Every speech ends up with one speaker and one evaluator; the sample meetings are all in the past, so none of them is NULL.</span><span data-lang="zh">每位講評員講評的是某一場特定的演講。<code>role_assignments</code> 只記錄「誰在哪場例會擔任什麼角色」，記不了「講評哪一場演講」，所以講評員直接記在演講上。演講資料在排議程時就會建立，那時常常還沒找到講者或講評員，所以 <code>member_id</code>（講者）和 <code>evaluator_id</code> 都允許 NULL，代表「還不知道」。每場演講最後都會有一位講者和一位講評員；樣本資料的例會都已經結束，所以沒有 NULL。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en"><code>status</code> and <code>paid_through</code> are separate</span><span data-lang="zh"><code>status</code> 和 <code>paid_through</code> 分開</span></td>
@@ -330,8 +330,8 @@ erDiagram
 
   <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-  <script src="js/design.js?v=6"></script>
-  <script src="js/queries.js?v=4"></script>
+  <script src="js/design.js?v=7"></script>
+  <script src="js/queries.js?v=5"></script>
   <script src="js/compare.js?v=3"></script>
   <script src="js/app.js?v=4"></script>
 </body>

@@ -79,7 +79,7 @@ FROM speeches sp
 JOIN members m ON m.member_id = sp.member_id
 GROUP BY m.member_id, m.display_name
 HAVING COUNT(*) > (
-    SELECT COUNT(*) * 1.0 / COUNT(DISTINCT member_id)
+    SELECT COUNT(member_id) * 1.0 / COUNT(DISTINCT member_id)
     FROM speeches
 )
 ORDER BY speeches DESC, m.display_name;

@@ -592,7 +592,7 @@ window.QUERIES = [
     "concept": "Subquery in HAVING",
     "user": "VP Education",
     "question": "Which speakers gave more speeches than the average speaker?",
-    "sql": "SELECT m.display_name, COUNT(*) AS speeches\nFROM speeches sp\nJOIN members m ON m.member_id = sp.member_id\nGROUP BY m.member_id, m.display_name\nHAVING COUNT(*) > (\n    SELECT COUNT(*) * 1.0 / COUNT(DISTINCT member_id)\n    FROM speeches\n)\nORDER BY speeches DESC, m.display_name;",
+    "sql": "SELECT m.display_name, COUNT(*) AS speeches\nFROM speeches sp\nJOIN members m ON m.member_id = sp.member_id\nGROUP BY m.member_id, m.display_name\nHAVING COUNT(*) > (\n    SELECT COUNT(member_id) * 1.0 / COUNT(DISTINCT member_id)\n    FROM speeches\n)\nORDER BY speeches DESC, m.display_name;",
     "concept_zh": "HAVING 裡的子查詢",
     "question_zh": "哪些講者的演講次數高於全體講者的平均？",
     "expected": {
