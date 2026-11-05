@@ -102,7 +102,7 @@ erDiagram
     roles ||--o{ club_roles : "named in"
     meetings ||--o{ speeches : "includes"
     members ||--o{ speeches : "delivers"
-    members |o--o{ speeches : "evaluates"
+    members ||--o{ speeches : "evaluates"
     pathways |o--o{ speeches : "belongs to"
     areas {
         VARCHAR area_id PK
@@ -192,7 +192,7 @@ erDiagram
             <tr><td><code>members</code> <span data-lang="en">take</span><span data-lang="zh">擔任</span> <code>role_assignments</code></td><td>1:N</td><td><span data-lang="en">Partial (a member may never take a role, see Q7)</span><span data-lang="zh">部分參與（會員可以從沒擔任過角色，見 Q7）</span></td><td><span data-lang="en">Total</span><span data-lang="zh">全參與</span></td><td><code>role_assignments.member_id</code> NOT NULL</td></tr>
             <tr><td><code>meetings</code> <span data-lang="en">include</span><span data-lang="zh">包含</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total</span><span data-lang="zh">全參與</span></td><td><code>speeches.meeting_id</code> NOT NULL</td></tr>
             <tr><td><code>members</code> <span data-lang="en">deliver</span><span data-lang="zh">發表</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total (every speech has a speaker)</span><span data-lang="zh">全參與（每場演講都有講者）</span></td><td><code>speeches.member_id</code> NOT NULL</td></tr>
-            <tr><td><code>members</code> <span data-lang="en">evaluate</span><span data-lang="zh">講評</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><strong><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></strong> <span data-lang="en">(evaluator may be missing)</span><span data-lang="zh">（可以沒有講評員）</span></td><td><code>speeches.evaluator_id</code> <span data-lang="en">allows NULL</span><span data-lang="zh">允許 NULL</span></td></tr>
+            <tr><td><code>members</code> <span data-lang="en">evaluate</span><span data-lang="zh">講評</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><span data-lang="en">Total (every speech has an evaluator)</span><span data-lang="zh">全參與（每場演講都有講評員）</span></td><td><code>speeches.evaluator_id</code> NOT NULL</td></tr>
             <tr><td><code>pathways</code> <span data-lang="en">contain</span><span data-lang="zh">包含</span> <code>speeches</code></td><td>1:N</td><td><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></td><td><strong><span data-lang="en">Partial</span><span data-lang="zh">部分參與</span></strong> <span data-lang="en">(non-Pathways speeches, see C4)</span><span data-lang="zh">（不屬於 Pathways 的演講，見 C4）</span></td><td><code>speeches.path_code</code> <span data-lang="en">allows NULL</span><span data-lang="zh">允許 NULL</span></td></tr>
           </tbody>
         </table>
@@ -220,11 +220,15 @@ erDiagram
             </tr>
             <tr>
               <td><span data-lang="en">Speech evaluators are stored in <code>speeches.evaluator_id</code></span><span data-lang="zh">個別講評員記在 <code>speeches.evaluator_id</code></span></td>
-              <td><span data-lang="en">Each evaluator evaluates one specific speech. <code>role_assignments</code> only says who took a role in which meeting, not which speech they evaluated, so the evaluator is stored on the speech itself (each speech has at most one).</span><span data-lang="zh">每位講評員講評的是某一場特定的演講。<code>role_assignments</code> 只記錄「誰在哪場例會擔任什麼角色」，記不了「講評哪一場演講」，所以講評員直接記在演講上（每場演講最多一位）。</span></td>
+              <td><span data-lang="en">Each evaluator evaluates one specific speech. <code>role_assignments</code> only says who took a role in which meeting, not which speech they evaluated, so the evaluator is stored on the speech itself. It is <code>NOT NULL</code> because speeches are recorded after the meeting, when every speech has had exactly one evaluator; if speeches were entered while planning, before an evaluator is found, it would have to allow NULL.</span><span data-lang="zh">每位講評員講評的是某一場特定的演講。<code>role_assignments</code> 只記錄「誰在哪場例會擔任什麼角色」，記不了「講評哪一場演講」，所以講評員直接記在演講上。它設成 <code>NOT NULL</code>，因為演講資料在例會結束後才登記，那時每場演講都已經有一位講評員；如果在排議程、還沒找到講評員時就要登記，就必須允許 NULL。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en"><code>status</code> and <code>paid_through</code> are separate</span><span data-lang="zh"><code>status</code> 和 <code>paid_through</code> 分開</span></td>
               <td><span data-lang="en"><code>status</code> says whether the person is still in the club; <code>paid_through</code> says how far dues are paid. “Still in the club but not renewed” is the combination of both.</span><span data-lang="zh"><code>status</code> 記錄這個人還在不在分會；<code>paid_through</code> 記錄會費繳到哪天。「人還在但還沒續繳」是兩個欄位組合出來的狀態。</span></td>
+            </tr>
+            <tr>
+              <td><span data-lang="en"><code>path_code</code> and <code>path_level</code> are filled together</span><span data-lang="zh"><code>path_code</code> 和 <code>path_level</code> 一起有值或一起為空</span></td>
+              <td><span data-lang="en">A level without a path, or a path without a level, makes no sense, so a CHECK requires both to be NULL or both to have a value. <code>CHECK (path_level BETWEEN 1 AND 5)</code> alone cannot do this: for NULL it gives UNKNOWN, and a CHECK only rejects FALSE.</span><span data-lang="zh">「沒有路徑卻有級數」或「有路徑卻沒有級數」都不合理，所以用一條 CHECK 規定兩者必須同時為 NULL 或同時有值。只靠 <code>CHECK (path_level BETWEEN 1 AND 5)</code> 做不到：遇到 NULL 時結果是 UNKNOWN，而 CHECK 只會擋下 FALSE。</span></td>
             </tr>
             <tr>
               <td><span data-lang="en">Time limits stored on each speech</span><span data-lang="zh">每場演講都存時間規定</span></td>
@@ -326,7 +330,7 @@ erDiagram
 
   <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-  <script src="js/design.js?v=4"></script>
+  <script src="js/design.js?v=5"></script>
   <script src="js/queries.js?v=4"></script>
   <script src="js/compare.js?v=3"></script>
   <script src="js/app.js?v=4"></script>

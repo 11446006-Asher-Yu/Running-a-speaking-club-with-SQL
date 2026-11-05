@@ -98,13 +98,15 @@ CREATE TABLE pathways (
     path_name       VARCHAR(40)  NOT NULL
 );
 
--- path_code is NULL for non-Pathways speeches (e.g. contest practice).
+-- path_code and path_level are NULL together, for non-Pathways speeches (e.g. contest practice).
 -- duration_sec is NULL when the timer did not record it.
+-- evaluator_id is required: speeches are recorded after the meeting, when every
+-- speech has had its evaluator.
 CREATE TABLE speeches (
     speech_id       INTEGER      PRIMARY KEY,
     meeting_id      INTEGER      NOT NULL,
     member_id       INTEGER      NOT NULL,
-    evaluator_id    INTEGER,
+    evaluator_id    INTEGER      NOT NULL,
     path_code       VARCHAR(5),
     path_level      INTEGER,
     title           VARCHAR(80)  NOT NULL,
@@ -112,6 +114,8 @@ CREATE TABLE speeches (
     min_sec         INTEGER      NOT NULL,
     max_sec         INTEGER      NOT NULL,
     CHECK (path_level BETWEEN 1 AND 5),
+    CHECK ((path_code IS NULL AND path_level IS NULL)
+        OR (path_code IS NOT NULL AND path_level IS NOT NULL)),
     CHECK (min_sec < max_sec),
     FOREIGN KEY (meeting_id)   REFERENCES meetings (meeting_id),
     FOREIGN KEY (member_id)    REFERENCES members (member_id),
